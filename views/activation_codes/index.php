@@ -118,10 +118,7 @@
     </div>
     <div class="card-body">
         <div class="row g-3">
-            <div class="col-md-4">
 
-
-            </div>
             <div class="col-md-2">
                 <label for="datatable-status" class="form-label fw-semibold">
                     <i class="fas fa-filter me-1"></i>Status
@@ -153,42 +150,6 @@
                     <button type="button" class="btn btn-primary shadow-sm" id="datatable-apply">
                         <i class="fas fa-filter me-2"></i>Apply Filters
                     </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Bulk Actions -->
-<div class="bulk-actions" style="display: none;">
-    <div class="row align-items-center">
-        <div class="col-md-6 mb-2 mb-md-0">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-check-square text-primary me-2 fs-5"></i>
-                <strong class="text-primary">
-                    <span id="selected-count">0</span> license(s) selected
-                </strong>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="row g-2">
-                <div class="col-md-6">
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text">
-                            <i class="fas fa-calendar-alt"></i>
-                        </span>
-                        <input type="date" class="form-control" id="bulk-valid-to" placeholder="New expiry date">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="btn-group btn-group-sm w-100" role="group">
-                        <button type="button" class="btn btn-warning" onclick="bulkUpdate()">
-                            <i class="fas fa-edit me-1"></i>Update
-                        </button>
-                        <button type="button" class="btn btn-danger" onclick="bulkDelete()">
-                            <i class="fas fa-trash me-1"></i>Delete
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
@@ -586,6 +547,7 @@
         showToast(`📊 Exporting data as ${format.toUpperCase()}...`, 'info');
         // Add your export logic here
     }
+
 </script>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>
