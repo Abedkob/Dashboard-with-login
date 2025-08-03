@@ -16,18 +16,18 @@ class AuthController
         $this->startSession();
     }
 
-        private function startSession()
-        {
-            if (session_status() === PHP_SESSION_NONE) {
-                session_start([
-                    'name' => 'AUTH_SESSID',
-                    'cookie_lifetime' => 3600, // 1 hour
-                    'cookie_httponly' => true,
-                    'cookie_secure' => isset($_SERVER['HTTPS']),
-                    'cookie_samesite' => 'Strict'
-                ]);
-            }
+    private function startSession()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start([
+                'name' => 'AUTH_SESSID',
+                'cookie_lifetime' => 3600, // 1 hour
+                'cookie_httponly' => true,
+                'cookie_secure' => isset($_SERVER['HTTPS']),
+                'cookie_samesite' => 'Strict'
+            ]);
         }
+    }
 
     private function setSecurityHeaders()
     {
@@ -66,7 +66,7 @@ class AuthController
         if (empty($username) || empty($password)) {
             error_log("Empty username or password");
             $_SESSION['login_error'] = 'Username and password are required';
-            header('Location: /Practice_php/public/login');
+            header('Location: ' . url('login'));
             exit;
         }
 
@@ -75,14 +75,14 @@ class AuthController
         if (!$user) {
             error_log("User not found: $username");
             $_SESSION['login_error'] = 'Invalid username or password';
-            header('Location: /Practice_php/public/login');
+            header('Location: ' . url('login'));
             exit;
         }
 
         if (!$this->userModel->verifyPassword($password, $user->password)) {
             error_log("Password mismatch for user: $username");
             $_SESSION['login_error'] = 'Invalid username or password';
-            header('Location: /Practice_php/public/login');
+            header('Location: ' . url('login'));
             exit;
         }
 
@@ -91,9 +91,10 @@ class AuthController
         $_SESSION['user_id'] = $user->user_id;
         $_SESSION['user_level'] = $user->level;
 
-        header('Location: /Practice_php/public/dashboard');
+        header('Location: ' . url('dashboard'));
         exit;
     }
+
     public function logout()
     {
         // Start session if not already started
@@ -120,7 +121,7 @@ class AuthController
         session_destroy();
 
         // Redirect to login page
-        header('Location: /Practice_php/public/login');
+        header('Location: ' . url('login'));
         exit;
     }
 }

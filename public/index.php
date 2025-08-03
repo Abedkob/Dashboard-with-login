@@ -3,12 +3,22 @@
 
 session_start();
 
-// Enable error reporting & logging
+// Enable error reporting & logging (disable display in production)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/../log/php-error.log');
 error_reporting(E_ALL);
+
+// Detect Base Path dynamically
+$basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
+
+// URL helper function
+function url($path = '')
+{
+    global $basePath;
+    return $basePath . '/' . ltrim($path, '/');
+}
 
 // Load DB config and connect
 try {
@@ -31,43 +41,43 @@ try {
     die("Database connection failed: " . $e->getMessage());
 }
 
-// Function to check if user is authenticated
+// Authentication helper
 function isAuthenticated()
 {
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
 
-// Function to redirect to login if not authenticated
 function requireAuth()
 {
     if (!isAuthenticated()) {
-        header('Location: /Practice_php/public/login');
+        header('Location: ' . url('login'));
         exit;
     }
 }
 
 // Parse request URI
 $request = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$basePath = '/Practice_php/public';
+
+// Remove base path from request
 if (strpos($request, $basePath) === 0) {
     $request = substr($request, strlen($basePath));
 }
 $request = '/' . trim($request, '/');
 
+// Debug log
 error_log("Routing request: " . $request);
 
 // Routing
+
 switch ($request) {
     case '/':
     case '/login':
-        // If already logged in, redirect to dashboard
         if (isAuthenticated()) {
-            header('Location: /Practice_php/public/dashboard');
+            header('Location: ' . url('dashboard'));
             exit;
         }
         require __DIR__ . '/../src/Controllers/AuthController.php';
-        $controller = new App\Controllers\AuthController($pdo);
-        $controller->showLogin();
+        (new App\Controllers\AuthController($pdo))->showLogin();
         break;
 
     case '/login/submit':
@@ -77,91 +87,76 @@ switch ($request) {
             exit;
         }
         require __DIR__ . '/../src/Controllers/AuthController.php';
-        $controller = new App\Controllers\AuthController($pdo);
-        $controller->handleLogin();
+        (new App\Controllers\AuthController($pdo))->handleLogin();
         break;
 
     case '/dashboard':
-        requireAuth(); // Check authentication before proceeding
+        requireAuth();
         require __DIR__ . '/../src/Controllers/DashboardController.php';
-        $controller = new App\Controllers\DashboardController($pdo);
-        $controller->index();
+        (new App\Controllers\DashboardController($pdo))->index();
         break;
 
     case '/activation-codes':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
-        $controller = new App\Controllers\ActivationCodeController($pdo);
-        $controller->index();
+        (new App\Controllers\ActivationCodeController($pdo))->index();
         break;
 
     case '/activation-codes/create':
         requireAuth();
+        require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
+        $controller = new App\Controllers\ActivationCodeController($pdo);
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
-            $controller = new App\Controllers\ActivationCodeController($pdo);
             $controller->create();
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
-            $controller = new App\Controllers\ActivationCodeController($pdo);
             $controller->store();
         }
         break;
 
     case '/export':
         requireAuth();
-        if ($_SERVER['REQUEST_METHOD'] === 'GET' || $_SERVER['REQUEST_METHOD'] === 'POST') {
-            require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
-            $controller = new App\Controllers\ActivationCodeController($pdo);
-            $controller->export();
-        }
+        require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
+        (new App\Controllers\ActivationCodeController($pdo))->export();
         break;
 
     case '/activation-codes/edit':
         requireAuth();
+        require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
+        $controller = new App\Controllers\ActivationCodeController($pdo);
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
-            $controller = new App\Controllers\ActivationCodeController($pdo);
-            $controller->edit($_GET['id']);
+            $controller->edit($_GET['id'] ?? null);
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
-            $controller = new App\Controllers\ActivationCodeController($pdo);
-            $controller->update($_GET['id']);
+            $controller->update($_GET['id'] ?? null);
         }
         break;
 
     case '/activation-codes/delete':
         requireAuth();
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
-            $controller = new App\Controllers\ActivationCodeController($pdo);
-            $controller->delete($_GET['id']);
-        }
+        require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
+        (new App\Controllers\ActivationCodeController($pdo))->delete($_GET['id'] ?? null);
         break;
 
-    case '/logout':
-        require __DIR__ . '/../src/Controllers/AuthController.php';
-        $controller = new App\Controllers\AuthController($pdo);
-        $controller->logout();
-        break;
     case '/activation-codes/datatable':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
-        $controller = new App\Controllers\ActivationCodeController($pdo);
-        $controller->datatable();
+        (new App\Controllers\ActivationCodeController($pdo))->datatable();
         break;
+
     case '/activation-codes/bulk-update':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
-        $controller = new App\Controllers\ActivationCodeController($pdo);
-        $controller->bulkUpdate();
+        (new App\Controllers\ActivationCodeController($pdo))->bulkUpdate();
         break;
 
     case '/activation-codes/bulk-delete':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
-        $controller = new App\Controllers\ActivationCodeController($pdo);
-        $controller->bulkDelete();
+        (new App\Controllers\ActivationCodeController($pdo))->bulkDelete();
+        break;
+
+    case '/logout':
+        require __DIR__ . '/../src/Controllers/AuthController.php';
+        (new App\Controllers\AuthController($pdo))->logout();
         break;
 
     default:

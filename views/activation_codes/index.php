@@ -1,5 +1,6 @@
-<?php include __DIR__ . '/../layouts/header.php'; ?>
-
+<?php include __DIR__ . '/../layouts/header.php';
+require_once __DIR__ . '/../../public/config.php';
+?>
 <!-- Custom Styles -->
 <style>
     .status-badge {
@@ -14,6 +15,7 @@
         padding: 0.25rem 0.5rem;
         border-radius: 0.25rem;
         font-size: 0.875rem;
+
     }
 
     .bulk-actions {
@@ -66,6 +68,26 @@
             gap: 1rem;
         }
     }
+
+    /* Modal specific styles */
+    .modal-content {
+        border: none;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .modal-footer {
+        border-top: 1px solid #dee2e6;
+    }
+
+    .delete-modal-icon {
+        font-size: 3rem;
+        color: #dc3545;
+    }
 </style>
 
 <!-- Page Header -->
@@ -78,9 +100,10 @@
     </div>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-            <a href="/Practice_php/public/activation-codes/create" class="btn btn-primary shadow-sm">
+            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
+                data-bs-target="#addLicenseModal">
                 <i class="fas fa-plus me-2"></i>Add New License
-            </a>
+            </button>
             <div class="dropdown">
                 <button type="button" class="btn btn-outline-secondary dropdown-toggle shadow-sm"
                     data-bs-toggle="dropdown">
@@ -89,12 +112,6 @@
                 <ul class="dropdown-menu shadow">
                     <li><a class="dropdown-item" href="#" onclick="exportData('csv')">
                             <i class="fas fa-file-csv me-2 text-success"></i>Export as CSV
-                        </a></li>
-                    <li><a class="dropdown-item" href="#" onclick="exportData('pdf')">
-                            <i class="fas fa-file-pdf me-2 text-danger"></i>Export as PDF
-                        </a></li>
-                    <li><a class="dropdown-item" href="#" onclick="exportData('excel')">
-                            <i class="fas fa-file-excel me-2 text-success"></i>Export as Excel
                         </a></li>
                 </ul>
             </div>
@@ -112,13 +129,95 @@
     <?php unset($_SESSION['success']); ?>
 <?php endif; ?>
 
+<!-- Add License Modal -->
+<div class="modal fade" id="addLicenseModal" tabindex="-1" aria-labelledby="addLicenseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addLicenseModalLabel">
+                    <i class="fas fa-plus-circle me-2"></i>Add New License
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="addLicenseModalBody">
+                <!-- Content will be loaded via AJAX -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading license form...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit License Modal -->
+<div class="modal fade" id="editLicenseModal" tabindex="-1" aria-labelledby="editLicenseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editLicenseModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edit License
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="editLicenseModalBody">
+                <!-- Content will be loaded via AJAX -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading license details...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteLicenseModal" tabindex="-1" aria-labelledby="deleteLicenseModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteLicenseModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="delete-modal-icon mb-3">
+                    <i class="fas fa-trash-alt"></i>
+                </div>
+                <h5>Are you sure you want to delete this license?</h5>
+                <p class="text-muted">This action cannot be undone. All data associated with this license will be
+                    permanently removed.</p>
+                <div class="license-info bg-light p-3 rounded mt-3 mb-3">
+                    <p class="mb-1"><strong>License ID:</strong> <span id="deleteLicenseId"></span></p>
+                    <p class="mb-1"><strong>Name:</strong> <span id="deleteLicenseName"></span></p>
+                    <p class="mb-0"><strong>Key:</strong> <span id="deleteLicenseKey"></span></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash-alt me-2"></i>Delete License
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Search and Filter Controls -->
 <div class="card shadow-sm mb-4">
     <div class="card-header">
     </div>
     <div class="card-body">
         <div class="row g-3">
-
             <div class="col-md-2">
                 <label for="datatable-status" class="form-label fw-semibold">
                     <i class="fas fa-filter me-1"></i>Status
@@ -210,13 +309,29 @@
 <script src="https://cdn.datatables.net/select/1.3.4/js/dataTables.select.min.js"></script>
 
 <script>
+    // Initialize modals
+    let addLicenseModal = null;
+    let editLicenseModal = null;
+    let deleteLicenseModal = null;
+    let currentLicenseId = null;
+
     $(document).ready(function () {
-        // Initialize DataTable with improved styling
+        // Initialize modals
+        addLicenseModal = new bootstrap.Modal(document.getElementById('addLicenseModal'));
+        editLicenseModal = new bootstrap.Modal(document.getElementById('editLicenseModal'));
+        deleteLicenseModal = new bootstrap.Modal(document.getElementById('deleteLicenseModal'));
+
+        // Load add license form when modal is shown
+        $('#addLicenseModal').on('show.bs.modal', function () {
+            loadAddLicenseForm();
+        });
+
+        // Initialize DataTable
         var table = $('#licenses-table').DataTable({
             processing: true,
             serverSide: true,
             ajax: {
-                url: '/Practice_php/public/activation-codes/datatable',
+                url: '<?= BASE_URL ?>/activation-codes/datatable',
                 type: 'POST',
                 data: function (d) {
                     d.status = $('#datatable-status').val();
@@ -330,12 +445,12 @@
                     render: function (data, type, row) {
                         if (type === 'display') {
                             return `<div class="btn-group btn-group-sm" role="group">
-                                    <a href="/Practice_php/public/activation-codes/edit?id=${data}" 
-                                       class="btn btn-outline-primary" title="Edit License">
+                                    <button type="button" class="btn btn-outline-primary" 
+                                            onclick="showEditModal(${data})" title="Edit License">
                                         <i class="fas fa-edit"></i>
-                                    </a>
+                                    </button>
                                     <button type="button" class="btn btn-outline-danger" 
-                                            onclick="deleteLicense(${data})" title="Delete License">
+                                            onclick="showDeleteModal(${data}, '${row.name}', '${row.license}')" title="Delete License">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>`;
@@ -384,6 +499,12 @@
             table.page.len($(this).val()).draw();
         });
 
+        // Confirm delete button handler
+        $('#confirmDeleteBtn').on('click', function () {
+            deleteLicense(currentLicenseId);
+            deleteLicenseModal.hide();
+        });
+
         // Update table info
         function updateTableInfo() {
             var info = table.page.info();
@@ -419,6 +540,129 @@
         });
     });
 
+    // Load add license form
+    function loadAddLicenseForm() {
+        $('#addLicenseModalBody').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading license form...</p>
+            </div>
+        `);
+
+        // Load the form via AJAX
+        $.get('<?= BASE_URL ?>/activation-codes/create', function (data) {
+
+            $('#addLicenseModalBody').html(data);
+
+            // Initialize form handlers
+            initLicenseForm();
+        }).fail(function () {
+            $('#addLicenseModalBody').html(`
+                <div class="alert alert-danger">
+                    Failed to load form. Please try again.
+                </div>
+            `);
+        });
+    }
+
+    // Initialize license form handlers
+    function initLicenseForm() {
+        // Set up form submission
+        $('#licenseForm').on('submit', function (e) {
+            e.preventDefault();
+            submitLicenseForm();
+        });
+
+        // Initialize date fields
+        const today = new Date().toISOString().split('T')[0];
+        const oneYearLater = new Date();
+        oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+        const oneYearLaterStr = oneYearLater.toISOString().split('T')[0];
+
+        $('#valid_from').val(today);
+        $('#valid_to').val(oneYearLaterStr);
+    }
+
+    // Submit license form
+    function submitLicenseForm() {
+        const formData = $('#licenseForm').serialize();
+
+        $.ajax({
+            url: '<?= BASE_URL ?>/activation-codes/create',
+            type: 'POST',
+            data: $('#licenseForm').serialize(),
+            dataType: 'json', // ✅ Expect JSON
+            beforeSend: function () {
+                $('#licenseForm button[type="submit"]').prop('disabled', true)
+                    .html('<i class="fas fa-spinner fa-spin me-2"></i>Creating...');
+            },
+            success: function (response) {
+                if (response.success) {
+                    showToast('✅ License created successfully!', 'success');
+                    $('#licenses-table').DataTable().ajax.reload();
+                    addLicenseModal.hide();
+                } else {
+                    if (response.errors) {
+                        let errorHtml = '<ul>';
+                        response.errors.forEach(function (err) {
+                            errorHtml += '<li>' + err + '</li>';
+                        });
+                        errorHtml += '</ul>';
+                        showToast(errorHtml, 'danger');
+                    } else {
+                        showToast('❌ ' + (response.message || 'Unknown error'), 'danger');
+                    }
+                }
+            },
+            error: function (xhr) {
+                showToast('❌ Error creating license: ' + xhr.responseText, 'danger');
+            },
+            complete: function () {
+                $('#licenseForm button[type="submit"]').prop('disabled', false)
+                    .html('<i class="fas fa-save me-2"></i>Create License');
+            }
+        });
+    };
+
+
+    // Show edit modal
+    function showEditModal(id) {
+        currentLicenseId = id;
+        $('#editLicenseModalBody').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading license details...</p>
+            </div>
+        `);
+
+        // Load edit form via AJAX
+        $.get('<?= BASE_URL ?>' + `/activation-codes/edit?id=${id}`, function (data) {
+
+            $('#editLicenseModalBody').html(data);
+        }).fail(function () {
+            $('#editLicenseModalBody').html(`
+                <div class="alert alert-danger">
+                    Failed to load license details. Please try again.
+                </div>
+            `);
+        });
+
+        editLicenseModal.show();
+    }
+
+    // Show delete modal
+    function showDeleteModal(id, name, license) {
+        currentLicenseId = id;
+        $('#deleteLicenseId').text(id);
+        $('#deleteLicenseName').text(name);
+        $('#deleteLicenseKey').text(license.substring(0, 12) + '...');
+        deleteLicenseModal.show();
+    }
+
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(function () {
             showToast('License key copied to clipboard!', 'success');
@@ -426,88 +670,24 @@
     }
 
     function deleteLicense(id) {
-        if (confirm('⚠️ Are you sure you want to delete this license?\n\nThis action cannot be undone.')) {
-            $.ajax({
-                url: `/Practice_php/public/activation-codes/delete?id=${id}`,
-                type: 'POST',
-                beforeSend: function () {
-                    showToast('Deleting license...', 'info');
-                },
-                success: function (response) {
-                    $('#licenses-table').DataTable().ajax.reload();
-                    showToast('✅ License deleted successfully!', 'success');
-                },
-                error: function (xhr) {
-                    showToast('❌ Error deleting license: ' + xhr.responseText, 'danger');
-                }
-            });
-        }
+        $.ajax({
+            url: '<?= BASE_URL ?>' + `/activation-codes/delete?id=${id}`,
+            type: 'POST',
+            beforeSend: function () {
+                showToast('Deleting license...', 'info');
+            },
+            success: function (response) {
+                $('#licenses-table').DataTable().ajax.reload();
+                showToast('✅ License deleted successfully!', 'success');
+            },
+            error: function (xhr) {
+                showToast('❌ Error deleting license: ' + xhr.responseText, 'danger');
+            }
+        });
     }
 
-    function bulkUpdate() {
-        const selectedIds = $('#licenses-table').DataTable().rows({ selected: true }).ids().toArray();
-        const newDate = $('#bulk-valid-to').val();
 
-        if (selectedIds.length === 0) {
-            showToast('⚠️ Please select at least one license', 'warning');
-            return;
-        }
-        if (!newDate) {
-            showToast('⚠️ Please select a new expiry date', 'warning');
-            return;
-        }
 
-        if (confirm(`🔄 Are you sure you want to update ${selectedIds.length} license(s)?\n\nNew expiry date: ${newDate}`)) {
-            $.ajax({
-                url: '/Practice_php/public/activation-codes/bulk-update',
-                type: 'POST',
-                data: {
-                    ids: selectedIds,
-                    valid_to: newDate
-                },
-                beforeSend: function () {
-                    showToast('Updating licenses...', 'info');
-                },
-                success: function (response) {
-                    $('#licenses-table').DataTable().ajax.reload();
-                    showToast(`✅ ${selectedIds.length} license(s) updated successfully!`, 'success');
-                    $('#bulk-valid-to').val('');
-                },
-                error: function (xhr) {
-                    showToast('❌ Error updating licenses: ' + xhr.responseText, 'danger');
-                }
-            });
-        }
-    }
-
-    function bulkDelete() {
-        const selectedIds = $('#licenses-table').DataTable().rows({ selected: true }).ids().toArray();
-
-        if (selectedIds.length === 0) {
-            showToast('⚠️ Please select at least one license', 'warning');
-            return;
-        }
-
-        if (confirm(`🗑️ Are you sure you want to delete ${selectedIds.length} license(s)?\n\n⚠️ This action cannot be undone!`)) {
-            $.ajax({
-                url: '/Practice_php/public/activation-codes/bulk-delete',
-                type: 'POST',
-                data: {
-                    ids: selectedIds
-                },
-                beforeSend: function () {
-                    showToast('Deleting licenses...', 'info');
-                },
-                success: function (response) {
-                    $('#licenses-table').DataTable().ajax.reload();
-                    showToast(`✅ ${selectedIds.length} license(s) deleted successfully!`, 'success');
-                },
-                error: function (xhr) {
-                    showToast('❌ Error deleting licenses: ' + xhr.responseText, 'danger');
-                }
-            });
-        }
-    }
 
     function showToast(message, type) {
         const toastId = 'toast-' + Date.now();
@@ -547,7 +727,6 @@
         showToast(`📊 Exporting data as ${format.toUpperCase()}...`, 'info');
         // Add your export logic here
     }
-
 </script>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>

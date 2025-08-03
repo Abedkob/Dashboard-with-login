@@ -13,7 +13,7 @@ class DashboardController
 
     public function index()
     {
-        // Get statistics
+        // Initialize statistics
         $stats = [
             'total' => 0,
             'active' => 0,
@@ -33,7 +33,7 @@ class DashboardController
             $stmt = $this->pdo->query("SELECT COUNT(*) FROM projects_list WHERE valid_to > DATE_ADD(CURDATE(), INTERVAL 7 DAY)");
             $stats['active'] = $stmt->fetchColumn();
 
-            // Expired codes (including today)
+            // Expired codes
             $stmt = $this->pdo->query("SELECT COUNT(*) FROM projects_list WHERE valid_to <= CURDATE()");
             $stats['expired'] = $stmt->fetchColumn();
 
@@ -53,7 +53,7 @@ class DashboardController
             ");
             $stats['recent'] = $stmt->fetchAll();
 
-            // Expiring details for alerts (only future dates, not today)
+            // Expiring details for alerts
             $stmt = $this->pdo->query("
                 SELECT 
                     id,
@@ -71,6 +71,9 @@ class DashboardController
         } catch (\PDOException $e) {
             error_log("Database error in DashboardController: " . $e->getMessage());
             $_SESSION['error'] = "Error loading dashboard data";
+
+            // If you want to redirect on error:
+            // header('Location: ' . url('login')); exit;
         }
 
         // Debug output for monthly data
@@ -115,7 +118,7 @@ class DashboardController
 
             $data['labels'] = $months;
 
-            // Get new licenses per month
+            // New licenses
             $newLicensesQuery = "
                 SELECT 
                     MONTH(created_at) as month_num,
@@ -133,7 +136,7 @@ class DashboardController
             $stmt = $this->pdo->query($newLicensesQuery);
             $newLicenses = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-            // Get expired licenses per month
+            // Expired licenses
             $expiredLicensesQuery = "
                 SELECT 
                     MONTH(valid_to) as month_num,
@@ -156,7 +159,7 @@ class DashboardController
             $data['new_licenses'] = array_fill(0, 6, 0);
             $data['expired_licenses'] = array_fill(0, 6, 0);
 
-            // Map query results to our month indexes
+            // Map query results
             foreach ($newLicenses as $row) {
                 $monthNum = (int) $row['month_num'];
                 $yearNum = (int) $row['year_num'];
@@ -183,7 +186,6 @@ class DashboardController
 
         } catch (\PDOException $e) {
             error_log("Error getting monthly data: " . $e->getMessage());
-            // Provide fallback empty data
             $data['new_licenses'] = array_fill(0, 6, 0);
             $data['expired_licenses'] = array_fill(0, 6, 0);
         }

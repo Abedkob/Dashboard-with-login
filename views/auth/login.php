@@ -1,5 +1,5 @@
-<?php include __DIR__ . '/../layouts/header_login.php'; ?>
-
+<?php include __DIR__ . '/../layouts/header_login.php';
+require_once __DIR__ . '/../../public/config.php'; ?>
 <div class="login-container">
     <div class="card shadow-lg" style="max-width: 450px; margin: 0 auto;">
         <div class="card-header bg-primary text-white text-center py-4">
@@ -18,7 +18,8 @@
                 </div>
             <?php endif; ?>
 
-            <form action="/Practice_php/public/login/submit" method="POST" id="loginForm">
+            <form action="<?= BASE_URL ?>/login/submit" method="POST" id="loginForm">
+
                 <div class="mb-4">
                     <label for="username" class="form-label fw-semibold">
                         <i class="fas fa-user me-2 text-primary"></i>Username

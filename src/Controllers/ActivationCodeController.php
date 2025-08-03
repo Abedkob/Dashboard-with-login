@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers;
 
 class ActivationCodeController
@@ -98,6 +99,7 @@ class ActivationCodeController
 
         // Load view
         require __DIR__ . '/../../views/activation_codes/index.php';
+
     }
 
     public function create()
@@ -107,14 +109,14 @@ class ActivationCodeController
 
     public function store()
     {
-        // Validate input
+        header('Content-Type: application/json');
+
         $errors = [];
         $fullName = trim($_POST['name'] ?? '');
         $license = trim($_POST['license'] ?? '');
         $validFrom = $_POST['valid_from'] ?? '';
         $validTo = $_POST['valid_to'] ?? '';
 
-        // Validation rules
         if (empty($fullName)) {
             $errors[] = 'Full name is required';
         } elseif (strlen($fullName) < 2) {
@@ -137,7 +139,6 @@ class ActivationCodeController
             $errors[] = 'Valid to date must be after valid from date';
         }
 
-        // Check for duplicate license
         $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM projects_list WHERE license = ?");
         $stmt->execute([$license]);
         if ($stmt->fetchColumn() > 0) {
@@ -147,29 +148,26 @@ class ActivationCodeController
         if (empty($errors)) {
             try {
                 $stmt = $this->pdo->prepare("
-                    INSERT INTO projects_list 
-                    (name, license, valid_from, valid_to, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, NOW(), NOW())
-                ");
-                $stmt->execute([
-                    $fullName,
-                    $license,
-                    $validFrom,
-                    $validTo
-                ]);
+                INSERT INTO projects_list 
+                (name, license, valid_from, valid_to, created_at, updated_at)
+                VALUES (?, ?, ?, ?, NOW(), NOW())
+            ");
+                $stmt->execute([$fullName, $license, $validFrom, $validTo]);
 
-                $_SESSION['success'] = 'License created successfully';
-                header('Location: /Practice_php/public/activation-codes');
+                echo json_encode(['success' => true]);
                 exit;
+
             } catch (\PDOException $e) {
-                $errors[] = 'Database error: ' . $e->getMessage();
+                echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+                exit;
             }
         }
 
-        $_SESSION['errors'] = $errors;
-        header('Location: /Practice_php/public/activation-codes/create');
+        echo json_encode(['success' => false, 'errors' => $errors]);
         exit;
     }
+
+
 
     public function edit($id)
     {
@@ -179,8 +177,9 @@ class ActivationCodeController
 
         if (!$code) {
             $_SESSION['errors'] = ['License not found'];
-            header('Location: /Practice_php/public/activation-codes');
+            header('Location: ' . url('activation-codes'));
             exit;
+
         }
 
         require __DIR__ . '/../../views/activation_codes/edit.php';
@@ -241,16 +240,18 @@ class ActivationCodeController
                 ]);
 
                 $_SESSION['success'] = 'License updated successfully';
-                header('Location: /Practice_php/public/activation-codes');
+                header('Location: ' . url('activation-codes'));
                 exit;
+
             } catch (\PDOException $e) {
                 $errors[] = 'Database error: ' . $e->getMessage();
             }
         }
 
         $_SESSION['errors'] = $errors;
-        header("Location: /Practice_php/public/activation-codes/edit?id=$id");
+        header('Location: ' . url('activation-codes/edit?id=' . urlencode($id)));
         exit;
+
     }
 
     public function delete($id)
@@ -263,7 +264,7 @@ class ActivationCodeController
 
             if (!$license) {
                 $_SESSION['errors'] = ['License not found'];
-                header('Location: /Practice_php/public/activation-codes');
+                header('Location: ' . url('activation-codes'));
                 exit;
             }
 
@@ -276,7 +277,7 @@ class ActivationCodeController
             $_SESSION['errors'] = ['Error deleting license: ' . $e->getMessage()];
         }
 
-        header('Location: /Practice_php/public/activation-codes');
+        header('Location: ' . url('activation-codes'));
         exit;
     }
 
@@ -285,7 +286,7 @@ class ActivationCodeController
     public function export()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /Practice_php/public/activation-codes');
+            header('Location: ' . url('activation-codes'));
             exit;
         }
 
@@ -336,12 +337,12 @@ class ActivationCodeController
                 $this->exportPDF($data);
             } else {
                 $_SESSION['errors'] = ['Invalid export format'];
-                header('Location: /Practice_php/public/activation-codes');
+                header('Location: ' . url('activation-codes'));
                 exit;
             }
         } catch (\PDOException $e) {
             $_SESSION['errors'] = ['Export failed: ' . $e->getMessage()];
-            header('Location: /Practice_php/public/activation-codes');
+            header('Location: ' . url('activation-codes'));
             exit;
         }
     }
