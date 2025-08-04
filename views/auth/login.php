@@ -37,8 +37,9 @@ require_once __DIR__ . '/../../public/config.php'; ?>
                             placeholder="Enter your password" required>
                         <button class="btn btn-outline-secondary px-3" type="button" id="togglePassword"
                             title="Show password">
-                            <i class="fas fa-eye" id="toggleIcon" ,color=blue></i>
+                            <i class="fas fa-eye" id="toggleIcon" style="color: blue;"></i>
                         </button>
+
                     </div>
                 </div>
 

@@ -34,8 +34,13 @@ class AuthController
         header("X-Content-Type-Options: nosniff");
         header("X-Frame-Options: SAMEORIGIN");
         header("X-XSS-Protection: 1; mode=block");
-        header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;");
         header("Strict-Transport-Security: max-age=31536000; includeSubDomains; preload");
+
+        header("Content-Security-Policy: default-src 'self'; "
+            . "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            . "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            . "font-src 'self' https://cdn.jsdelivr.net; "
+            . "img-src 'self' data:;");
     }
 
     public function showLogin()

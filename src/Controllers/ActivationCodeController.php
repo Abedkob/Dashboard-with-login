@@ -614,8 +614,10 @@ class ActivationCodeController
         $length = $_POST['length'] ?? 10;
         $search = $_POST['search']['value'] ?? '';
         $status = $_POST['status'] ?? '';
+        $orderColumn = $_POST['order'][0]['column'] ?? 0;
+        $orderDir = $_POST['order'][0]['dir'] ?? 'asc';
 
-        // Build base query
+        // Base query with status and days_left calculation
         $baseQuery = "SELECT *, 
                  CASE 
                      WHEN valid_to < CURDATE() THEN 'expired'
@@ -636,27 +638,27 @@ class ActivationCodeController
             $params[] = "%$search%";
         }
 
-        // Apply status filter
+        // Apply status filter - now properly aligned with the CASE statement
         if (!empty($status)) {
-            if ($status === 'active') {
-                $whereConditions[] = "valid_to > DATE_ADD(CURDATE(), INTERVAL 7 DAY)";
-            } elseif ($status === 'expired') {
-                $whereConditions[] = "valid_to < CURDATE()";
-            } elseif ($status === 'expiring') {
-                $whereConditions[] = "valid_to BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)";
+            switch ($status) {
+                case 'active':
+                    $whereConditions[] = "valid_to > DATE_ADD(CURDATE(), INTERVAL 7 DAY)";
+                    break;
+                case 'expiring':
+                    $whereConditions[] = "valid_to BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)";
+                    break;
+                case 'expired':
+                    $whereConditions[] = "valid_to < CURDATE()";
+                    break;
             }
         }
 
         // Combine WHERE conditions
-        $whereClause = '';
-        if (!empty($whereConditions)) {
-            $whereClause = ' WHERE ' . implode(' AND ', $whereConditions);
-        }
+        $whereClause = empty($whereConditions) ? '' : ' WHERE ' . implode(' AND ', $whereConditions);
 
         // Get total records count
         $totalRecordsQuery = "SELECT COUNT(*) FROM projects_list";
-        $stmt = $this->pdo->query($totalRecordsQuery);
-        $totalRecords = $stmt->fetchColumn();
+        $totalRecords = $this->pdo->query($totalRecordsQuery)->fetchColumn();
 
         // Get filtered count
         $filteredQuery = "SELECT COUNT(*) FROM projects_list" . $whereClause;
@@ -664,44 +666,35 @@ class ActivationCodeController
         $stmt->execute($params);
         $filteredRecords = $stmt->fetchColumn();
 
-        // Ordering
-        $orderColumn = $_POST['order'][0]['column'] ?? 0;
-        $orderDir = $_POST['order'][0]['dir'] ?? 'asc';
-        $orderColumnName = '';
-
-        // Map DataTables column index to database column
+        // Column mapping for ordering
         $columns = [
-            1 => 'id',
-            2 => 'name',
-            3 => 'license',
-            4 => 'valid_from',
-            5 => 'valid_to',
-            6 => 'status',
-            7 => 'days_left'
+            0 => 'id',
+            1 => 'name',
+            2 => 'license',
+            3 => 'valid_from',
+            4 => 'valid_to',
+            5 => 'status',
+            6 => 'days_left'
         ];
 
+        // Ordering
+        $orderBy = '';
         if (isset($columns[$orderColumn])) {
             $orderColumnName = $columns[$orderColumn];
             $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
+            $orderBy = " ORDER BY $orderColumnName $orderDir";
         }
 
-        // Build final query
-        $query = $baseQuery . $whereClause;
-
-        if (!empty($orderColumnName)) {
-            $query .= " ORDER BY $orderColumnName $orderDir";
-        }
-
-        $query .= " LIMIT ?, ?";
+        // Build and execute final query
+        $query = $baseQuery . $whereClause . $orderBy . " LIMIT ?, ?";
         $params[] = (int) $start;
         $params[] = (int) $length;
 
-        // Execute query
         $stmt = $this->pdo->prepare($query);
         $stmt->execute($params);
         $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        // Prepare response
+        // Format the response
         $response = [
             "draw" => intval($draw),
             "recordsTotal" => intval($totalRecords),
@@ -709,7 +702,6 @@ class ActivationCodeController
             "data" => $data
         ];
 
-        // Return JSON response
         header('Content-Type: application/json');
         echo json_encode($response);
         exit;

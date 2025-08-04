@@ -6,100 +6,105 @@ $isLoginPage = (basename($_SERVER['PHP_SELF']) == 'login.php' || strpos($_SERVER
 <html lang="en">
 
 <head>
+    <!-- Load jQuery FIRST -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $isLoginPage ? 'Login' : 'License Management System' ?></title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <?php if (!$isLoginPage): ?>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <style>
-            .sidebar {
-                min-height: 100vh;
-                box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
-            }
+</head>
 
-            .sidebar-sticky {
-                position: sticky;
-                top: 0;
-                height: calc(100vh - 48px);
-                padding-top: .5rem;
-                overflow-x: hidden;
-                overflow-y: auto;
-            }
+<?php if (!$isLoginPage): ?>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+        }
 
-            .status-badge {
-                font-size: 0.75rem;
-            }
+        .sidebar-sticky {
+            position: sticky;
+            top: 0;
+            height: calc(100vh - 48px);
+            padding-top: .5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
 
-            .chart-container {
-                position: relative;
-                height: 300px;
-            }
+        .status-badge {
+            font-size: 0.75rem;
+        }
 
-            .bulk-actions {
-                display: none;
-                background: #f8f9fa;
-                padding: 10px;
-                border-radius: 5px;
-                margin-bottom: 15px;
-            }
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
 
-            .table-actions {
-                white-space: nowrap;
-            }
-        </style>
-    <?php else: ?>
-        <style>
-            body {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
+        .bulk-actions {
+            display: none;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
 
-            .login-card {
-                background: white;
-                border-radius: 15px;
-                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-                overflow: hidden;
-                max-width: 400px;
-                width: 100%;
-            }
+        .table-actions {
+            white-space: nowrap;
+        }
+    </style>
+<?php else: ?>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-            .login-header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 2rem;
-                text-align: center;
-            }
+        .login-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            max-width: 400px;
+            width: 100%;
+        }
 
-            .login-body {
-                padding: 2rem;
-            }
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
 
-            .form-control:focus {
-                border-color: #667eea;
-                box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-            }
+        .login-body {
+            padding: 2rem;
+        }
 
-            .btn-login {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border: none;
-                padding: 12px;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
 
-            .btn-login:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            }
-        </style>
-    <?php endif; ?>
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+<?php endif; ?>
 </head>
 
 <body>

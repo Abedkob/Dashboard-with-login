@@ -1,6 +1,7 @@
 RewriteEngine On
+RewriteBase /Practice_php/public/
 
-# Redirect all requests to index.php if the file/folder doesn't exist
+# Redirect all requests to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [QSA,L]
+RewriteRule ^ index.php [L]

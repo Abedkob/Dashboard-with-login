@@ -37,13 +37,14 @@ class DashboardController
             $stmt = $this->pdo->query("SELECT COUNT(*) FROM projects_list WHERE valid_to <= CURDATE()");
             $stats['expired'] = $stmt->fetchColumn();
 
-            // Expiring soon (within next 7 days, excluding today)
+            // Expiring soon (within next 7 days, including today)
             $stmt = $this->pdo->query("
-                SELECT COUNT(*) 
-                FROM projects_list 
-                WHERE valid_to BETWEEN DATE_ADD(CURDATE(), INTERVAL 1 DAY) AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-            ");
+    SELECT COUNT(*) 
+    FROM projects_list 
+    WHERE valid_to BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+");
             $stats['expiring'] = $stmt->fetchColumn();
+
 
             // Recent updates
             $stmt = $this->pdo->query("
@@ -55,25 +56,27 @@ class DashboardController
 
             // Expiring details for alerts
             $stmt = $this->pdo->query("
-                SELECT 
-                    id,
-                    name, 
-                    license, 
-                    valid_to, 
-                    DATEDIFF(valid_to, CURDATE()) as days_remaining 
-                FROM projects_list 
-                WHERE valid_to BETWEEN DATE_ADD(CURDATE(), INTERVAL 1 DAY) AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-                ORDER BY valid_to ASC 
-                LIMIT 10
-            ");
+    SELECT 
+        id,
+        name, 
+        license, 
+        valid_to, 
+        DATEDIFF(valid_to, CURDATE()) as days_remaining 
+    FROM projects_list 
+    WHERE valid_to BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+    ORDER BY valid_to ASC 
+    LIMIT 10
+");
+
             $stats['expiring_details'] = $stmt->fetchAll();
 
         } catch (\PDOException $e) {
             error_log("Database error in DashboardController: " . $e->getMessage());
             $_SESSION['error'] = "Error loading dashboard data";
 
-            // If you want to redirect on error:
-            // header('Location: ' . url('login')); exit;
+
+            header('Location: ' . url('login'));
+            exit;
         }
 
         // Debug output for monthly data

@@ -1,15 +1,11 @@
 <?php
 require_once __DIR__ . '/../../public/config.php';
 ?>
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2"><i class="fas fa-edit"></i> Edit License</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="<?= BASE_URL ?>/activation-codes" class="btn btn-sm btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Back to List
-        </a>
 
-    </div>
-</div>
+<body>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css" rel="stylesheet">
+</body>
 
 <?php if (isset($_SESSION['errors'])): ?>
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -23,9 +19,8 @@ require_once __DIR__ . '/../../public/config.php';
     </div>
     <?php unset($_SESSION['errors']); ?>
 <?php endif; ?>
-
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-20 col-md-15 col-lg-12">
         <div class="card shadow">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">License Information</h5>
@@ -34,7 +29,7 @@ require_once __DIR__ . '/../../public/config.php';
             <div class="card-body">
                 <form method="POST" action="<?= BASE_URL ?>/activation-codes/edit?id=<?= $code['id'] ?>">
 
-                    id="licenseForm">
+
 
                     <!-- Name and License -->
                     <div class="row">

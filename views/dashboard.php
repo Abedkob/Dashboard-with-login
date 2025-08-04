@@ -138,12 +138,18 @@
                                 <?php foreach ($stats['recent'] as $update): ?>
                                     <?php
                                     $validTo = new DateTime($update['valid_to']);
-                                    $now = new DateTime();
+                                    $now = new DateTime('today'); // today at 00:00:00 to ignore time part
+                            
                                     $interval = $now->diff($validTo);
-                                    $daysRemaining = $interval->days;
+                                    $daysRemaining = (int) $interval->format('%r%a'); // signed difference in days
+                            
+                                    // Expired if validTo date is before today (not equal)
                                     $isExpired = $validTo < $now;
-                                    $isExpiringSoon = !$isExpired && $daysRemaining <= 7;
+
+                                    // Expiring soon if not expired and days remaining between 0 and 7
+                                    $isExpiringSoon = !$isExpired && $daysRemaining >= 0 && $daysRemaining <= 7;
                                     ?>
+
                                     <tr>
                                         <td><?= htmlspecialchars($update['name']) ?></td>
                                         <td><code><?= htmlspecialchars(substr($update['license'], 0, 8)) ?>...</code></td>
