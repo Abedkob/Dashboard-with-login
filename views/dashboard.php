@@ -203,8 +203,8 @@
                                         left
                                     </span>
                                 </div>
-                                <a href="/Practice_php/public/activation-codes/edit?id=<?= $expiring['id'] ?>"
-                                    class="btn btn-sm btn-outline-primary mt-2 w-100">
+                                <a href="#" class="btn btn-sm btn-outline-primary mt-2 w-100 renew-license-btn"
+                                    data-id="<?= $expiring['id'] ?>" data-bs-toggle="modal" data-bs-target="#renewLicenseModal">
                                     <i class="fas fa-edit"></i> Renew
                                 </a>
                             </div>
@@ -216,6 +216,31 @@
                         <p class="text-muted">No licenses expiring soon</p>
                     </div>
                 <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="renewLicenseModal" tabindex="-1" aria-labelledby="renewLicenseModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg"> <!-- Added modal-lg class here -->
+        <div class="modal-content">
+            <!-- Rest of your modal content remains the same -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="renewLicenseModalLabel">Renew License</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="renewLicenseModalBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading renewal form...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveRenewalChanges">Save changes</button>
             </div>
         </div>
     </div>
@@ -312,6 +337,49 @@
                         position: 'top',
                     }
                 }
+            }
+        });
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Handle modal show event
+        $('#renewLicenseModal').on('show.bs.modal', function (event) {
+            const button = $(event.relatedTarget); // Button that triggered the modal
+            const licenseId = button.data('id'); // Extract info from data-* attributes
+            const modal = $(this);
+
+            // Load the form via AJAX
+            $.get(`/Practice_php/public/activation-codes/edit?id=${licenseId}`, function (data) {
+                // Extract just the form part if needed, or use the whole response
+                modal.find('.modal-body').html(data);
+            }).fail(function () {
+                modal.find('.modal-body').html(`
+                <div class="alert alert-danger">
+                    Failed to load renewal form. Please try again.
+                </div>
+            `);
+            });
+        });
+
+        // Handle save button click
+        $('#saveRenewalChanges').on('click', function () {
+            const form = $('#renewLicenseModalBody form');
+            if (form.length) {
+                // Submit the form via AJAX
+                $.ajax({
+                    url: form.attr('action'),
+                    type: 'POST',
+                    data: form.serialize(),
+                    success: function (response) {
+                        // Handle success - refresh page or show success message
+                        location.reload();
+                    },
+                    error: function (xhr) {
+                        // Handle error - show validation errors or error message
+                        $('#renewLicenseModalBody').html(xhr.responseText);
+                    }
+                });
             }
         });
     });
