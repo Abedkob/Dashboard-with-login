@@ -90,13 +90,8 @@
                         License Management System
                     </h5>
                 </div>
-                <div class="col-auto">
-                    <small class="text-muted">
-                        <i class="fas fa-shield-alt"></i> Secure Login
-                    </small>
-                </div>
+
             </div>
-        </div>
     </header>
 
     <!-- Main Content -->

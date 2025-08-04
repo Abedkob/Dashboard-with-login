@@ -158,7 +158,7 @@
                                             <?php if ($isExpired): ?>
                                                 <span class="badge bg-danger">Expired</span>
                                             <?php elseif ($isExpiringSoon): ?>
-                                                <span class="badge bg-warning">Expiring Soon (<?= $daysRemaining + 1 ?> days)</span>
+                                                <span class="badge bg-warning">Expiring Soon (<?= $daysRemaining ?> days)</span>
                                             <?php else: ?>
                                                 <span class="badge bg-success">Active</span>
                                             <?php endif; ?>

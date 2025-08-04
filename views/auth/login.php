@@ -53,12 +53,7 @@ require_once __DIR__ . '/../../public/config.php'; ?>
 
             </form>
 
-            <div class="text-center p-3 bg-light rounded">
-                <small class="text-muted">
-                    <i class="fas fa-shield-alt me-2"></i>
-                    Your connection is secured with 256-bit SSL encryption
-                </small>
-            </div>
+
         </div>
     </div>
 </div>

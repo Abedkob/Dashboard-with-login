@@ -34,7 +34,7 @@ class DashboardController
             $stats['active'] = $stmt->fetchColumn();
 
             // Expired codes
-            $stmt = $this->pdo->query("SELECT COUNT(*) FROM projects_list WHERE valid_to <= CURDATE()");
+            $stmt = $this->pdo->query("SELECT COUNT(*) FROM projects_list WHERE valid_to < CURDATE()");
             $stats['expired'] = $stmt->fetchColumn();
 
             // Expiring soon (within next 7 days, including today)
