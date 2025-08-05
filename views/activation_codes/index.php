@@ -739,6 +739,8 @@ require_once __DIR__ . '/../../public/config.php';
         // Show edit modal
         function showEditModal(id) {
             currentLicenseId = id;
+
+            // Show loading spinner in modal body
             $('#editLicenseModalBody').html(`
         <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
@@ -748,45 +750,80 @@ require_once __DIR__ . '/../../public/config.php';
         </div>
     `);
 
-            // Load edit form via AJAX
-            $.get('<?= BASE_URL ?>' + `/activation-codes/edit?id=${id}`, function (data) {
-                $('#editLicenseModalBody').html(data);
-
-                // Re-attach the submit handler after loading the form
-                $('#editLicenseForm').on('submit', function (e) {
-                    e.preventDefault();
-
-                    const form = $(this);
-                    const url = form.attr('action');
-                    const formData = form.serialize();
-
-                    $.ajax({
-                        type: 'POST',
-                        url: url,
-                        data: formData,
-                        success: function (response) {
-                            $('#editLicenseModal').modal('hide');
-                            $('#licenses-table').DataTable().ajax.reload(null, false);
-                        },
-                        error: function (xhr) {
-                            if (xhr.responseText) {
-                                $('#editLicenseModalBody').html(xhr.responseText);
-                                // Re-attach the submit handler again after showing errors
-                                $('#editLicenseForm').on('submit', arguments.callee);
-                            }
-                        }
-                    });
-                });
-            }).fail(function () {
-                $('#editLicenseModalBody').html(`
-            <div class="alert alert-danger">
-                Failed to load license details. Please try again.
-            </div>
-        `);
-            });
-
+            // Show the modal
             $('#editLicenseModal').modal('show');
+
+            // Load edit form via AJAX
+            $.get('<?= BASE_URL ?>' + `/activation-codes/edit?id=${id}`)
+                .done(function (data) {
+                    $('#editLicenseModalBody').html(data);
+
+                    // Attach submit handler
+                    attachEditFormHandler();
+                })
+                .fail(function () {
+                    $('#editLicenseModalBody').html(`
+                <div class="alert alert-danger">
+                    Failed to load license details. Please try again.
+                </div>
+            `);
+                });
         }
+
+        function attachEditFormHandler() {
+            $('#editLicenseForm').off('submit').on('submit', function (e) {
+                e.preventDefault();
+
+                const form = $(this);
+                const url = form.attr('action');
+                const formData = form.serialize();
+
+                // Clear previous errors
+                $('.date-error').remove();
+
+                // Validate dates
+                const validFromVal = $('#valid_from').val();
+                const validToVal = $('#valid_to').val();
+
+                const validFrom = new Date(validFromVal);
+                const validTo = new Date(validToVal);
+
+                if (!validFromVal || isNaN(validFrom.getTime()) || !validToVal || isNaN(validTo.getTime())) {
+                    $('#valid_to').after('<div class="text-danger date-error">Please provide valid dates.</div>');
+                    return;
+                }
+
+                if (validTo <= validFrom) {
+                    $('#valid_to').after('<div class="text-danger date-error">Valid To must be after Valid From.</div>');
+                    return;
+                }
+
+                // Disable submit button to prevent multiple clicks
+                const submitBtn = form.find('button[type="submit"]');
+                submitBtn.prop('disabled', true).text('Saving...');
+
+                // Send AJAX request
+                $.ajax({
+                    type: 'POST',
+                    url: url,
+                    data: formData,
+                    success: function (response) {
+                        $('#editLicenseModal').modal('hide');
+                        $('#licenses-table').DataTable().ajax.reload(null, false);
+                    },
+                    error: function (xhr) {
+                        if (xhr.responseText) {
+                            $('#editLicenseModalBody').html(xhr.responseText);
+                            attachEditFormHandler(); // Reattach handler after replacing form
+                        }
+                    },
+                    complete: function () {
+                        submitBtn.prop('disabled', false).text('Update License');
+                    }
+                });
+            });
+        }
+
 
         // Show delete modal
         function showDeleteModal(id, name, license) {

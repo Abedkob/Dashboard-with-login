@@ -353,7 +353,7 @@
             $.get(`/Practice_php/public/activation-codes/edit?id=${licenseId}`, function (data) {
                 modal.find('.modal-body').html(data);
 
-                // After loading, hide the original Update button inside the form
+                // Hide the original Update button inside the form
                 modal.find('#submitBtn').hide();
             }).fail(function () {
                 modal.find('.modal-body').html(`
@@ -368,6 +368,38 @@
         $('#saveRenewalChanges').on('click', function () {
             const form = $('#renewLicenseModalBody form');
             if (form.length) {
+                // Clear previous errors
+                $('.date-error').remove();
+                $('.is-invalid').removeClass('is-invalid');
+
+                // Validate dates
+                const validFromVal = $('#valid_from').val();
+                const validToVal = $('#valid_to').val();
+
+                const validFrom = new Date(validFromVal);
+                const validTo = new Date(validToVal);
+
+                let hasError = false;
+
+                if (!validFromVal || isNaN(validFrom.getTime())) {
+                    $('#valid_from').addClass('is-invalid')
+                        .after('<div class="invalid-feedback date-error">Please provide a valid start date.</div>');
+                    hasError = true;
+                }
+
+                if (!validToVal || isNaN(validTo.getTime())) {
+                    $('#valid_to').addClass('is-invalid')
+                        .after('<div class="invalid-feedback date-error">Please provide a valid end date.</div>');
+                    hasError = true;
+                } else if (!hasError && validTo <= validFrom) {
+                    $('#valid_to').addClass('is-invalid')
+                        .after('<div class="invalid-feedback date-error">Valid To must be after Valid From.</div>');
+                    hasError = true;
+                }
+
+                // Stop if validation failed
+                if (hasError) return;
+
                 // Submit form via AJAX
                 $.ajax({
                     url: form.attr('action'),
@@ -394,6 +426,7 @@
             }
         });
     });
+
 </script>
 
 <?php include __DIR__ . '/layouts/footer.php'; ?>

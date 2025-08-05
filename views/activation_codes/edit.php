@@ -157,6 +157,7 @@ require_once __DIR__ . '/../../public/config.php';
 </div>
 
 <script>
+    let isSubmitting = false;
     // Store original date for reset functionality
     $.get('<?= BASE_URL ?>' + `/activation-codes/edit?id=${id}`, function (data) {
         $('#editLicenseModalBody').html(data);
@@ -167,7 +168,7 @@ require_once __DIR__ . '/../../public/config.php';
         // Re-bind form submission handler
         bindEditFormHandler();
     });
-    let isSubmitting = false;
+
 
     $(document).ready(function () {
         // Set initial min date for valid_to
