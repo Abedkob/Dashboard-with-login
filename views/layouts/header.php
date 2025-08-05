@@ -12,7 +12,7 @@ $isLoginPage = (basename($_SERVER['PHP_SELF']) == 'login.php' || strpos($_SERVER
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $isLoginPage ? 'Login' : 'License Management System' ?></title>
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -130,12 +130,17 @@ $isLoginPage = (basename($_SERVER['PHP_SELF']) == 'login.php' || strpos($_SERVER
                                     <i class="fas fa-list"></i> License Manager
                                 </a>
                             </li>
-
+                            <li class="nav-item">
+                                <a class="nav-link" href="/Practice_php/public/payments-manager">
+                                    <i class="fas fa-money-bill-wave"></i> Payments Manager
+                                </a>
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="/Practice_php/public/logout">
                                     <i class="fas fa-sign-out-alt"></i> Logout
                                 </a>
                             </li>
+
                         </ul>
                     </div>
                 </nav>

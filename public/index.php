@@ -159,6 +159,11 @@ switch ($request) {
         require __DIR__ . '/../src/Controllers/AuthController.php';
         (new App\Controllers\AuthController($pdo))->logout();
         break;
+    case '/payments-manager':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
+        (new App\Controllers\PaymentsController($pdo))->index();
+        break;
 
     default:
         http_response_code(404);
