@@ -710,7 +710,7 @@ require_once __DIR__ . '/../../public/config.php';
                 success: function (response) {
                     if (response.success) {
                         showToast('✅ License created successfully!', 'success');
-                        $('#licenses-table').DataTable().reload();
+                        $('#licenses-table').DataTable().ajax.reload(null, false);
                         addLicenseModal.hide();
                     } else {
                         if (response.errors) {
@@ -766,7 +766,7 @@ require_once __DIR__ . '/../../public/config.php';
                         data: formData,
                         success: function (response) {
                             $('#editLicenseModal').modal('hide');
-                            window.location.reload();
+                            $('#licenses-table').DataTable().ajax.reload(null, false);
                         },
                         error: function (xhr) {
                             if (xhr.responseText) {

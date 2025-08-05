@@ -158,7 +158,15 @@ require_once __DIR__ . '/../../public/config.php';
 
 <script>
     // Store original date for reset functionality
-    const originalDate = '<?= htmlspecialchars($code['valid_to']) ?>';
+    $.get('<?= BASE_URL ?>' + `/activation-codes/edit?id=${id}`, function (data) {
+        $('#editLicenseModalBody').html(data);
+
+        // Set originalDate dynamically here
+        originalDate = $('#valid_to').val();
+
+        // Re-bind form submission handler
+        bindEditFormHandler();
+    });
     let isSubmitting = false;
 
     $(document).ready(function () {
