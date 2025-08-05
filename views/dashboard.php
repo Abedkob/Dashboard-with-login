@@ -228,7 +228,6 @@
             <!-- Rest of your modal content remains the same -->
             <div class="modal-header">
                 <h5 class="modal-title" id="renewLicenseModalLabel">Renew License</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="renewLicenseModalBody">
                 <div class="text-center py-4">
@@ -353,8 +352,9 @@
             $.get(`/Practice_php/public/activation-codes/edit?id=${licenseId}`, function (data) {
                 modal.find('.modal-body').html(data);
 
-                // Hide the original Update button inside the form
+
                 modal.find('#submitBtn').hide();
+                modal.find('#closev').hide();
             }).fail(function () {
                 modal.find('.modal-body').html(`
                 <div class="alert alert-danger">
@@ -383,17 +383,68 @@
 
                 if (!validFromVal || isNaN(validFrom.getTime())) {
                     $('#valid_from').addClass('is-invalid')
-                        .after('<div class="invalid-feedback date-error">Please provide a valid start date.</div>');
+                        .after(`
+  <div class="invalid-feedback date-error" style="
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    color: #b91c1c;
+    background: #fee2e2;
+    border-radius: 0.375rem;
+  ">
+    <svg style="width: 1rem; height: 1rem; flex-shrink: 0;" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clip-rule="evenodd"/>
+    </svg>
+    <span>Valid To must be after Valid From.</span>
+  </div>
+`);
                     hasError = true;
                 }
 
                 if (!validToVal || isNaN(validTo.getTime())) {
                     $('#valid_to').addClass('is-invalid')
-                        .after('<div class="invalid-feedback date-error">Please provide a valid end date.</div>');
+                        .after(`
+  <div class="invalid-feedback date-error" style="
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    color: #b91c1c;
+    background: #fee2e2;
+    border-radius: 0.375rem;
+  ">
+    <svg style="width: 1rem; height: 1rem; flex-shrink: 0;" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clip-rule="evenodd"/>
+    </svg>
+    <span>Valid To must be after Valid From.</span>
+  </div>
+`);
                     hasError = true;
                 } else if (!hasError && validTo <= validFrom) {
                     $('#valid_to').addClass('is-invalid')
-                        .after('<div class="invalid-feedback date-error">Valid To must be after Valid From.</div>');
+                        .after(`
+  <div class="invalid-feedback date-error" style="
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    color: #b91c1c;
+    background: #fee2e2;
+    border-radius: 0.375rem;
+  ">
+    <svg style="width: 1rem; height: 1rem; flex-shrink: 0;" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clip-rule="evenodd"/>
+    </svg>
+    <span>Valid To must be after Valid From.</span>
+  </div>
+`);
                     hasError = true;
                 }
 
