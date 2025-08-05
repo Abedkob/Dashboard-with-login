@@ -343,16 +343,18 @@
 </script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Handle modal show event
+        // When modal is opened
         $('#renewLicenseModal').on('show.bs.modal', function (event) {
-            const button = $(event.relatedTarget); // Button that triggered the modal
-            const licenseId = button.data('id'); // Extract info from data-* attributes
+            const button = $(event.relatedTarget);
+            const licenseId = button.data('id');
             const modal = $(this);
 
-            // Load the form via AJAX
+            // Load the edit form via AJAX
             $.get(`/Practice_php/public/activation-codes/edit?id=${licenseId}`, function (data) {
-                // Extract just the form part if needed, or use the whole response
                 modal.find('.modal-body').html(data);
+
+                // After loading, hide the original Update button inside the form
+                modal.find('#submitBtn').hide();
             }).fail(function () {
                 modal.find('.modal-body').html(`
                 <div class="alert alert-danger">
@@ -362,22 +364,31 @@
             });
         });
 
-        // Handle save button click
+        // When Save Changes button in modal footer is clicked
         $('#saveRenewalChanges').on('click', function () {
             const form = $('#renewLicenseModalBody form');
             if (form.length) {
-                // Submit the form via AJAX
+                // Submit form via AJAX
                 $.ajax({
                     url: form.attr('action'),
                     type: 'POST',
                     data: form.serialize(),
+                    beforeSend: function () {
+                        $('#saveRenewalChanges')
+                            .prop('disabled', true)
+                            .html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+                    },
                     success: function (response) {
-                        // Handle success - refresh page or show success message
+                        $('#renewLicenseModal').modal('hide');
                         location.reload();
                     },
                     error: function (xhr) {
-                        // Handle error - show validation errors or error message
                         $('#renewLicenseModalBody').html(xhr.responseText);
+                    },
+                    complete: function () {
+                        $('#saveRenewalChanges')
+                            .prop('disabled', false)
+                            .html('<i class="fas fa-save"></i> Save changes');
                     }
                 });
             }

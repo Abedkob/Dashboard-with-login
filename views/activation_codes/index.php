@@ -710,7 +710,7 @@ require_once __DIR__ . '/../../public/config.php';
                 success: function (response) {
                     if (response.success) {
                         showToast('✅ License created successfully!', 'success');
-                        $('#licenses-table').DataTable().ajax.reload();
+                        $('#licenses-table').DataTable().reload();
                         addLicenseModal.hide();
                     } else {
                         if (response.errors) {
@@ -740,27 +740,52 @@ require_once __DIR__ . '/../../public/config.php';
         function showEditModal(id) {
             currentLicenseId = id;
             $('#editLicenseModalBody').html(`
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2">Loading license details...</p>
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
             </div>
-        `);
+            <p class="mt-2">Loading license details...</p>
+        </div>
+    `);
 
             // Load edit form via AJAX
             $.get('<?= BASE_URL ?>' + `/activation-codes/edit?id=${id}`, function (data) {
-
                 $('#editLicenseModalBody').html(data);
+
+                // Re-attach the submit handler after loading the form
+                $('#editLicenseForm').on('submit', function (e) {
+                    e.preventDefault();
+
+                    const form = $(this);
+                    const url = form.attr('action');
+                    const formData = form.serialize();
+
+                    $.ajax({
+                        type: 'POST',
+                        url: url,
+                        data: formData,
+                        success: function (response) {
+                            $('#editLicenseModal').modal('hide');
+                            window.location.reload();
+                        },
+                        error: function (xhr) {
+                            if (xhr.responseText) {
+                                $('#editLicenseModalBody').html(xhr.responseText);
+                                // Re-attach the submit handler again after showing errors
+                                $('#editLicenseForm').on('submit', arguments.callee);
+                            }
+                        }
+                    });
+                });
             }).fail(function () {
                 $('#editLicenseModalBody').html(`
-                <div class="alert alert-danger">
-                    Failed to load license details. Please try again.
-                </div>
-            `);
+            <div class="alert alert-danger">
+                Failed to load license details. Please try again.
+            </div>
+        `);
             });
 
-            editLicenseModal.show();
+            $('#editLicenseModal').modal('show');
         }
 
         // Show delete modal
