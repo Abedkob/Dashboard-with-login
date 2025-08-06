@@ -164,7 +164,48 @@ switch ($request) {
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->index();
         break;
+    case '/payments-manager/create':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
 
+        $requestData = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+
+        (new App\Controllers\PaymentsController($pdo))->create($requestData);
+        break;
+    case '/payments-manager/available-clients':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
+        (new App\Controllers\PaymentsController($pdo))->getAvailableClients();
+        break;
+
+    case '/payments-manager/validate-client':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
+        (new App\Controllers\PaymentsController($pdo))->validateClient();
+        break;
+
+    case '/payments-manager/search-clients':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
+        (new App\Controllers\PaymentsController($pdo))->searchClients();
+        break;
+    case '/payments-manager/get-payment':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
+        (new App\Controllers\PaymentsController($pdo))->getPayment();
+        break;
+    case '/payments-manager/update':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing payment ID']);
+            exit;
+        }
+        $requestData = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        (new App\Controllers\PaymentsController($pdo))->update((int) $id, $requestData);
+        break;
     default:
         http_response_code(404);
         echo "Page not found";
