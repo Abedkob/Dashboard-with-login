@@ -100,7 +100,7 @@ class Payment
         ]);
     }
 
-    public function delete(int $id): bool
+    public function deletePayment($id): bool
     {
         $sql = "UPDATE payments SET is_deleted = 1 WHERE id = :id";
         $stmt = $this->db->prepare($sql);

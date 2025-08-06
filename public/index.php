@@ -206,6 +206,17 @@ switch ($request) {
         $requestData = json_decode(file_get_contents('php://input'), true) ?? $_POST;
         (new App\Controllers\PaymentsController($pdo))->update((int) $id, $requestData);
         break;
+    case '/payments-manager/delete':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
+        $id = $_POST['id'] ?? null;
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing payment ID']);
+            exit;
+        }
+        (new App\Controllers\PaymentsController($pdo))->delete((int) $id);
+        break;
     default:
         http_response_code(404);
         echo "Page not found";

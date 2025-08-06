@@ -99,19 +99,27 @@ class PaymentsController
     // Soft delete payment by ID
     public function delete(int $id): void
     {
-        $exists = $this->paymentModel->find($id);
-        if (!$exists) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Payment not found']);
-            return;
-        }
+        try {
+            // Check if payment exists
+            $payment = $this->paymentModel->find($id);
+            if (!$payment) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Payment not found']);
+                return;
+            }
 
-        $success = $this->paymentModel->delete($id);
-        if ($success) {
-            echo json_encode(['message' => 'Payment deleted successfully']);
-        } else {
+            // Soft delete the payment
+            $success = $this->paymentModel->deletePayment($id);
+
+            if ($success) {
+                echo json_encode(['message' => 'Payment deleted successfully']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Failed to delete payment']);
+            }
+        } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to delete payment']);
+            echo json_encode(['error' => 'Server error: ' . $e->getMessage()]);
         }
     }
     // For client sear
