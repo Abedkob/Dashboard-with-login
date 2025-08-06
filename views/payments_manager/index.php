@@ -6,10 +6,21 @@ require_once __DIR__ . '/../../public/config.php'; ?>
 <head>
     <meta charset="UTF-8">
     <title>Payments Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
     <style>
         :root {
             --primary-color: #6366f1;
@@ -182,21 +193,7 @@ require_once __DIR__ . '/../../public/config.php'; ?>
                     <div class="modal-body">
                         <form id="paymentForm">
                             <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="client_id" class="form-label">Client ID</label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" id="client_id" name="client_id"
-                                            required>
-                                        <button class="btn btn-outline-secondary" type="button"
-                                            id="validateClientBtn">Validate</button>
-                                    </div>
-                                    <div id="clientInfo" class="mt-2 text-success" style="display: none;">
-                                        <span id="clientNameDisplay"></span>
-                                    </div>
-                                    <div id="clientError" class="mt-2 text-danger" style="display: none;">
-                                        Client ID not found in projects list
-                                    </div>
-                                </div>
+
                                 <div class="col-md-6">
                                     <label for="availableClients" class="form-label">Or select from available
                                         clients</label>
@@ -262,7 +259,7 @@ require_once __DIR__ . '/../../public/config.php'; ?>
                     <div class="modal-body">
                         <form id="editPaymentForm">
                             <input type="hidden" id="edit_payment_id" name="id">
-                            <div class="row mb-3">
+                            <div class="row mb-3" style="display: none;">
                                 <div class="col-md-6">
                                     <label for="edit_client_id" class="form-label">Client ID</label>
                                     <div class="input-group">
@@ -278,8 +275,8 @@ require_once __DIR__ . '/../../public/config.php'; ?>
                                         Client ID not found in projects list
                                     </div>
                                 </div>
-
                             </div>
+
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label for="edit_amount" class="form-label">Amount</label>
@@ -464,6 +461,7 @@ require_once __DIR__ . '/../../public/config.php'; ?>
                         text: 'Print',
                         className: 'btn btn-secondary btn-sm'
                     }
+
                 ],
                 initComplete: function () {
                     this.api().buttons().container().appendTo('#exportButtons');
@@ -519,6 +517,7 @@ require_once __DIR__ . '/../../public/config.php'; ?>
     </script>
 
     <script>
+
         $(document).ready(function () {
             // Delete Payment Modal Handling
             let paymentToDelete = null;
@@ -631,7 +630,8 @@ require_once __DIR__ . '/../../public/config.php'; ?>
     </script>
     <script>
         $(document).ready(function () {
-            // Load available clients on modal show
+
+            // Load available clients when modal is shown
             $('#newPaymentModal').on('show.bs.modal', function () {
                 loadAvailableClients();
             });
@@ -645,24 +645,10 @@ require_once __DIR__ . '/../../public/config.php'; ?>
                 }
             });
 
-            // Client ID validation
-            $('#validateClientBtn').click(function () {
-                validateClientId();
-            });
-
-            // Handle selection from available clients dropdown
-            $('#availableClients').change(function () {
-                const clientId = $(this).val();
-                if (clientId) {
-                    $('#client_id').val(clientId);
-                    validateClientId(clientId);
-                }
-            });
-
             // Form submission
             $('#submitPayment').click(function () {
                 const formData = {
-                    client_id: $('#client_id').val(),
+                    client_id: $('#availableClients').val(), // Only dropdown selection
                     amount: $('#amount').val(),
                     method: $('#method').val() === 'other' ? $('#customMethod').val() : $('#method').val(),
                     payment_date: $('#payment_date').val(),
@@ -670,7 +656,7 @@ require_once __DIR__ . '/../../public/config.php'; ?>
                 };
 
                 if (!formData.client_id) {
-                    alert('Please select or validate a client');
+                    alert('Please select a client from the dropdown');
                     return;
                 }
 
@@ -723,7 +709,7 @@ require_once __DIR__ . '/../../public/config.php'; ?>
                 });
             });
 
-            // Helper functions
+            // Load available clients into dropdown
             function loadAvailableClients() {
                 $.ajax({
                     url: '<?= url('payments-manager/available-clients') ?>',
@@ -734,8 +720,44 @@ require_once __DIR__ . '/../../public/config.php'; ?>
                         select.empty().append('<option value="">Select a client</option>');
 
                         if (Array.isArray(data)) {
+                            // Store clients data for filtering
+                            window.availableClients = data;
+
                             data.forEach(client => {
                                 select.append(`<option value="${client.id}">${client.id} - ${client.name}</option>`);
+                            });
+
+                            // Initialize select2 for searchable dropdown
+                            select.select2({
+                                placeholder: "Search for a client...",
+                                allowClear: true,
+                                width: '100%',
+                                dropdownParent: $('#newPaymentModal')
+                            });
+
+                            // Add search box above dropdown
+                            $('.select2-container').prepend('<div class="client-search-box mb-2 p-2 border-bottom"><input type="text" class="form-control form-control-sm" id="clientSearchInput" placeholder="Type to filter clients..."></div>');
+
+                            // Filter functionality
+                            $('#clientSearchInput').on('input', function () {
+                                const searchTerm = $(this).val().toLowerCase();
+                                if (searchTerm.length > 0) {
+                                    const filteredClients = window.availableClients.filter(client =>
+                                        client.name.toLowerCase().includes(searchTerm) ||
+                                        client.id.toString().includes(searchTerm)
+                                    );
+
+                                    select.empty().append('<option value="">Select a client</option>');
+                                    filteredClients.forEach(client => {
+                                        select.append(`<option value="${client.id}">${client.id} - ${client.name}</option>`);
+                                    });
+                                } else {
+                                    // Reset to all clients when search is cleared
+                                    select.empty().append('<option value="">Select a client</option>');
+                                    window.availableClients.forEach(client => {
+                                        select.append(`<option value="${client.id}">${client.id} - ${client.name}</option>`);
+                                    });
+                                }
                             });
                         } else {
                             console.error('Expected array but got:', data);
@@ -747,185 +769,188 @@ require_once __DIR__ . '/../../public/config.php'; ?>
                 });
             }
 
-            function validateClientId(clientId = null) {
-                const idToValidate = clientId || $('#client_id').val();
-                if (!idToValidate) return;
 
-                const $validateBtn = $('#validateClientBtn');
-                const originalText = $validateBtn.html();
-                $validateBtn.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Validating...').prop('disabled', true);
-
-                $.ajax({
-                    url: '<?= url('payments-manager/validate-client') ?>',
-                    method: 'GET',
-                    data: { client_id: idToValidate },
-                    dataType: 'json',
-                    success: function (data) {
-                        if (data.valid) {
-                            $('#clientError').hide();
-                            $('#clientInfo').show();
-                            $('#clientNameDisplay').text(`Valid client: ${data.client_name}`);
-                        } else {
-                            $('#clientInfo').hide();
-                            $('#clientError').show();
-                        }
-                    },
-                    error: function (xhr) {
-                        $('#clientError').text('Error validating client').show();
-                        $('#clientInfo').hide();
-                    },
-                    complete: function () {
-                        $validateBtn.html(originalText).prop('disabled', false);
+        });
+    </script>
+    <script>
+        $(document).ready(function () {
+            // Initialize Select2 when modal is shown
+            $('#newPaymentModal').on('shown.bs.modal', function () {
+                $('#availableClients').select2({
+                    placeholder: "Search for a client...",
+                    allowClear: true,
+                    width: '100%',
+                    dropdownParent: $('#newPaymentModal'),
+                    ajax: {
+                        url: '<?= url('payments-manager/available-clients') ?>',
+                        dataType: 'json',
+                        delay: 250,
+                        processResults: function (data) {
+                            return {
+                                results: $.map(data, function (item) {
+                                    return {
+                                        id: item.id,
+                                        text: item.id + ' - ' + item.name
+                                    }
+                                })
+                            };
+                        },
+                        cache: true
                     }
                 });
-            }
-        });
+            });
+
+            // Destroy Select2 when modal is hidden
+            $('#newPaymentModal').on('hidden.bs.modal', function () {
+                if ($('#availableClients').hasClass('select2-hidden-accessible')) {
+                    $('#availableClients').select2('destroy');
+                }
+            });
     </script>
 
     <script>
-        $(document).ready(function () {
-            // Edit Payment Modal Handling
-            $(document).on('click', '.edit-payment', function () {
-                const paymentId = $(this).data('id');
-                console.log("Edit button clicked for payment ID:", paymentId);
+            $(document).ready(function () {
+                $(document).on('click', '.edit-payment', function () {
+                    const paymentId = $(this).data('id');
+                    console.log("Edit button clicked for payment ID:", paymentId);
 
-                $('#edit_clientInfo').hide();
-                $('#edit_clientError').hide();
+                    $('#edit_clientInfo').hide();
+                    $('#edit_clientError').hide();
 
-                $.getJSON('<?= url('payments-manager/get-payment') ?>', { id: paymentId })
-                    .done(function (response) {
-                        if (response && response.data) {
-                            const payment = response.data;
-                            $('#edit_payment_id').val(payment.id);
-                            $('#edit_client_id').val(payment.client_id);
-                            $('#edit_amount').val(payment.amount);
-                            $('#edit_payment_date').val(payment.payment_date);
-                            $('#edit_note').val(payment.note || '');
+                    $.getJSON('<?= url('payments-manager/get-payment') ?>', { id: paymentId })
+                        .done(function (response) {
+                            if (response && response.data) {
+                                const payment = response.data;
+                                $('#edit_payment_id').val(payment.id);
+                                $('#edit_client_id').val(payment.client_id);
+                                $('#edit_amount').val(payment.amount);
+                                $('#edit_payment_date').val(payment.payment_date);
+                                $('#edit_note').val(payment.note || '');
 
-                            const methodSelect = $('#edit_method');
-                            methodSelect.val(payment.method);
-                            if (payment.method === 'other') {
-                                $('#edit_customMethod').show().val(payment.method).attr('required', true);
+                                const methodSelect = $('#edit_method');
+                                methodSelect.val(payment.method);
+                                if (payment.method === 'other') {
+                                    $('#edit_customMethod').show().val(payment.method).attr('required', true);
+                                } else {
+                                    $('#edit_customMethod').hide().removeAttr('required');
+                                }
+
+                                validateEditClientId(payment.client_id);
+                                loadEditAvailableClients();
+                                $('#editPaymentModal').modal('show');
                             } else {
-                                $('#edit_customMethod').hide().removeAttr('required');
+                                console.error("No payment data in response");
+                                alert('No payment data found in response');
                             }
+                        })
+                        .fail(function (xhr, status, error) {
+                            console.error("Error loading payment data:", error, xhr.responseText);
+                            alert('Error loading payment data: ' + error);
+                        });
+                });
 
-                            validateEditClientId(payment.client_id);
-                            loadEditAvailableClients();
-                            $('#editPaymentModal').modal('show');
-                        } else {
-                            console.error("No payment data in response");
-                            alert('No payment data found in response');
+                // Update payment
+                $('#updatePayment').click(function () {
+                    const paymentId = $('#edit_payment_id').val();
+                    if (!paymentId) {
+                        alert('Payment ID is missing');
+                        return;
+                    }
+
+                    const formData = {
+                        id: paymentId,
+                        client_id: $('#edit_client_id').val(),
+                        amount: $('#edit_amount').val(),
+                        method: $('#edit_method').val() === 'other' ? $('#edit_customMethod').val() : $('#edit_method').val(),
+                        payment_date: $('#edit_payment_date').val(),
+                        note: $('#edit_note').val()
+                    };
+
+                    console.log("Submitting update for payment ID:", paymentId, "with data:", formData);
+
+                    $.ajax({
+                        url: '<?= url('payments-manager/update?id=') ?>' + paymentId,
+                        method: 'POST',
+                        data: formData,
+                        dataType: 'json',
+                        success: function (response) {
+                            if (response.error) {
+                                alert(response.error);
+                            } else {
+                                alert('Payment updated successfully!');
+                                $('#editPaymentModal').modal('hide');
+                                table.ajax.reload(null, false);
+                            }
+                        },
+                        error: function (xhr) {
+                            try {
+                                const error = xhr.responseJSON ? xhr.responseJSON.error : xhr.responseText;
+                                alert(error || 'An error occurred');
+                            } catch (e) {
+                                alert('An error occurred while processing the request');
+                            }
+                            console.error("Update error:", xhr.responseText);
                         }
-                    })
-                    .fail(function (xhr, status, error) {
-                        console.error("Error loading payment data:", error, xhr.responseText);
-                        alert('Error loading payment data: ' + error);
                     });
-            });
+                });
 
-            // Update payment
-            $('#updatePayment').click(function () {
-                const paymentId = $('#edit_payment_id').val();
-                if (!paymentId) {
-                    alert('Payment ID is missing');
-                    return;
+                // Client validation for edit form
+                function validateEditClientId(clientId = null) {
+                    const idToValidate = clientId || $('#edit_client_id').val();
+                    if (!idToValidate) return;
+
+                    $.getJSON('<?= url('payments-manager/validate-client') ?>', { client_id: idToValidate })
+                        .done(function (data) {
+                            if (data.valid) {
+                                $('#edit_clientError').hide();
+                                $('#edit_clientInfo').show();
+                                $('#edit_clientNameDisplay').text(`Valid client: ${data.client_name}`);
+                            } else {
+                                $('#edit_clientInfo').hide();
+                                $('#edit_clientError').show();
+                            }
+                        })
+                        .fail(function () {
+                            $('#edit_clientError').text('Error validating client').show();
+                            $('#edit_clientInfo').hide();
+                        });
                 }
 
-                const formData = {
-                    id: paymentId,
-                    client_id: $('#edit_client_id').val(),
-                    amount: $('#edit_amount').val(),
-                    method: $('#edit_method').val() === 'other' ? $('#edit_customMethod').val() : $('#edit_method').val(),
-                    payment_date: $('#edit_payment_date').val(),
-                    note: $('#edit_note').val()
-                };
+                // Load available clients for edit form
+                function loadEditAvailableClients() {
+                    $.getJSON('<?= url('payments-manager/available-clients') ?>')
+                        .done(function (data) {
+                            const select = $('#edit_availableClients');
+                            select.empty().append('<option value="">Select a client</option>');
+                            if (Array.isArray(data)) {
+                                data.forEach(client => {
+                                    select.append(`<option value="${client.id}">${client.id} - ${client.name}</option>`);
+                                });
+                            }
+                        })
+                        .fail(function (error) {
+                            console.error("Error loading available clients:", error);
+                        });
+                }
 
-                console.log("Submitting update for payment ID:", paymentId, "with data:", formData);
+                // Toggle custom method input for edit form
+                $('#edit_method').change(function () {
+                    if ($(this).val() === 'other') {
+                        $('#edit_customMethod').show().attr('required', true);
+                    } else {
+                        $('#edit_customMethod').hide().removeAttr('required');
+                    }
+                });
 
-                $.ajax({
-                    url: '<?= url('payments-manager/update?id=') ?>' + paymentId,
-                    method: 'POST',
-                    data: formData,
-                    dataType: 'json',
-                    success: function (response) {
-                        if (response.error) {
-                            alert(response.error);
-                        } else {
-                            alert('Payment updated successfully!');
-                            $('#editPaymentModal').modal('hide');
-                            table.ajax.reload(null, false);
-                        }
-                    },
-                    error: function (xhr) {
-                        try {
-                            const error = xhr.responseJSON ? xhr.responseJSON.error : xhr.responseText;
-                            alert(error || 'An error occurred');
-                        } catch (e) {
-                            alert('An error occurred while processing the request');
-                        }
-                        console.error("Update error:", xhr.responseText);
+                // Handle selection from edit available clients dropdown
+                $('#edit_availableClients').change(function () {
+                    const clientId = $(this).val();
+                    if (clientId) {
+                        $('#edit_availableClients').val(clientId);
+                        validateEditClientId(clientId);
                     }
                 });
             });
-
-            // Client validation for edit form
-            function validateEditClientId(clientId = null) {
-                const idToValidate = clientId || $('#edit_client_id').val();
-                if (!idToValidate) return;
-
-                $.getJSON('<?= url('payments-manager/validate-client') ?>', { client_id: idToValidate })
-                    .done(function (data) {
-                        if (data.valid) {
-                            $('#edit_clientError').hide();
-                            $('#edit_clientInfo').show();
-                            $('#edit_clientNameDisplay').text(`Valid client: ${data.client_name}`);
-                        } else {
-                            $('#edit_clientInfo').hide();
-                            $('#edit_clientError').show();
-                        }
-                    })
-                    .fail(function () {
-                        $('#edit_clientError').text('Error validating client').show();
-                        $('#edit_clientInfo').hide();
-                    });
-            }
-
-            // Load available clients for edit form
-            function loadEditAvailableClients() {
-                $.getJSON('<?= url('payments-manager/available-clients') ?>')
-                    .done(function (data) {
-                        const select = $('#edit_availableClients');
-                        select.empty().append('<option value="">Select a client</option>');
-                        if (Array.isArray(data)) {
-                            data.forEach(client => {
-                                select.append(`<option value="${client.id}">${client.id} - ${client.name}</option>`);
-                            });
-                        }
-                    })
-                    .fail(function (error) {
-                        console.error("Error loading available clients:", error);
-                    });
-            }
-
-            // Toggle custom method input for edit form
-            $('#edit_method').change(function () {
-                if ($(this).val() === 'other') {
-                    $('#edit_customMethod').show().attr('required', true);
-                } else {
-                    $('#edit_customMethod').hide().removeAttr('required');
-                }
-            });
-
-            // Handle selection from edit available clients dropdown
-            $('#edit_availableClients').change(function () {
-                const clientId = $(this).val();
-                if (clientId) {
-                    $('#edit_availableClients').val(clientId);
-                    validateEditClientId(clientId);
-                }
-            });
-        });
     </script>
 </body>
 
