@@ -1,7 +1,5 @@
 <?php include __DIR__ . '/../layouts/header.php';
-require_once __DIR__ . '/../../public/config.php';
-?>
-
+require_once __DIR__ . '/../../public/config.php'; ?>
 <!-- Custom Styles -->
 <style>
     .status-badge {
@@ -70,7 +68,6 @@ require_once __DIR__ . '/../../public/config.php';
         color: #495057;
     }
 </style>
-
 <!-- Page Header -->
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
     <div class="d-flex align-items-center">
@@ -88,7 +85,6 @@ require_once __DIR__ . '/../../public/config.php';
         </div>
     </div>
 </div>
-
 <!-- Success Alert -->
 <?php if (isset($_SESSION['success'])): ?>
     <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
@@ -98,7 +94,6 @@ require_once __DIR__ . '/../../public/config.php';
     </div>
     <?php unset($_SESSION['success']); ?>
 <?php endif; ?>
-
 <!-- Add Payment Modal -->
 <div class="modal fade" id="addPaymentModal" tabindex="-1" aria-labelledby="addPaymentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -124,7 +119,6 @@ require_once __DIR__ . '/../../public/config.php';
         </div>
     </div>
 </div>
-
 <!-- Edit Payment Modal -->
 <div class="modal fade" id="editPaymentModal" tabindex="-1" aria-labelledby="editPaymentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -150,7 +144,6 @@ require_once __DIR__ . '/../../public/config.php';
         </div>
     </div>
 </div>
-
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deletePaymentModal" tabindex="-1" aria-labelledby="deletePaymentModalLabel"
     aria-hidden="true">
@@ -187,7 +180,6 @@ require_once __DIR__ . '/../../public/config.php';
         </div>
     </div>
 </div>
-
 <!-- Payments Table -->
 <div class="card shadow-sm">
     <div class="card-header">
@@ -246,11 +238,9 @@ require_once __DIR__ . '/../../public/config.php';
         </div>
     </div>
 </div>
-
 <!-- DataTables CSS -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.bootstrap5.min.css">
-
 <!-- DataTables JS -->
 <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
@@ -261,25 +251,67 @@ require_once __DIR__ . '/../../public/config.php';
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-
 <script>
     // Global variables
     let paymentsTable;
     let currentPaymentId = null;
     let addPaymentModal, editPaymentModal, deletePaymentModal;
 
+    // Define the submission function in global scope
+    window.submitEditPaymentForm = function () {
+        const formData = $('#editPaymentForm').serialize();
+        const paymentId = $('input[name="payment_id"]').val();
+        const $button = $('#submitEditPayment');
+        const originalText = $button.html();
+        $button.html('<i class="fas fa-spinner fa-spin me-2"></i>Updating...').prop('disabled', true);
+        $.ajax({
+            url: '<?= BASE_URL ?>/payments-manager/update?id=' + paymentId,
+            method: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function (response) {
+                if (response.error) {
+                    showToast(response.error, 'danger');
+                } else {
+                    showToast('Payment updated successfully!', 'success');
+                    if (typeof editPaymentModal !== 'undefined' && editPaymentModal.hide) {
+                        editPaymentModal.hide();
+                    } else {
+                        console.error('editPaymentModal not defined or missing hide method');
+                        $('#editPaymentModal').modal('hide'); // Fallback
+                    }
+                    if (typeof paymentsTable !== 'undefined' && paymentsTable.ajax.reload) {
+                        paymentsTable.ajax.reload();
+                    } else {
+                        console.error('paymentsTable not defined or missing ajax.reload method');
+                    }
+                }
+            },
+            error: function (xhr) {
+                let errorMessage = 'Error updating payment';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    errorMessage = response.error || errorMessage;
+                } catch (e) {
+                    errorMessage = xhr.responseText || errorMessage;
+                }
+                showToast(errorMessage, 'danger');
+            },
+            complete: function () {
+                $button.html(originalText).prop('disabled', false);
+            }
+        });
+    };
+
     $(document).ready(function () {
         // Initialize modals
         addPaymentModal = new bootstrap.Modal(document.getElementById('addPaymentModal'));
         editPaymentModal = new bootstrap.Modal(document.getElementById('editPaymentModal'));
         deletePaymentModal = new bootstrap.Modal(document.getElementById('deletePaymentModal'));
-
         // Initialize DataTable
         initializeDataTable();
-
         // Load client filter options
         loadClientFilterOptions();
-
         // Bind events
         bindEvents();
     });
@@ -364,11 +396,11 @@ require_once __DIR__ . '/../../public/config.php';
                     render: function (data, type, row) {
                         return `<div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-primary"
-                                onclick="showEditModal(${data})" title="Edit Payment">
+                            onclick="showEditModal(${data})" title="Edit Payment">
                             <i class="fas fa-edit"></i>
                         </button>
                         <button type="button" class="btn btn-outline-danger"
-                                onclick="showDeleteModal(${data}, '${row.client_name || 'N/A'}', '${row.amount}')" title="Delete Payment">
+                            onclick="showDeleteModal(${data}, '${row.client_name || 'N/A'}', '${row.amount}')" title="Delete Payment">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>`;
@@ -436,35 +468,54 @@ require_once __DIR__ . '/../../public/config.php';
             </div>
             <p class="mt-2">Loading payment form...</p>
         </div>
-    `);
-
+        `);
         // Corrected AJAX call to the controller route
         $.get('<?= BASE_URL ?>/payments-manager/create', function (data) {
             $('#addPaymentModalBody').html(data);
+            // Set today's date as default for the new form
+            const today = new Date().toISOString().split('T')[0];
+            $('#addPaymentModalBody').find('#payment_date').val(today);
         }).fail(function () {
             $('#addPaymentModalBody').html(`
             <div class="alert alert-danger">
                 <i class="fas fa-exclamation-triangle me-2"></i>
                 Failed to load form. Please try again.
             </div>
-        `);
+            `);
         });
     }
 
     function bindEvents() {
-        // Toggle custom method input
-        // This logic is now inside views/payments_manager/create.php and views/payments_manager/edit.php
-        // and will be re-initialized when the form is loaded into the modal.
-
-        // Form submission for add
-        $('#submitPayment').click(function () {
-            // Trigger the submit event on the form loaded inside the modal
-            $('#addPaymentModalBody').find('#addPaymentForm').submit();
+        // Form submission for add (delegated)
+        $(document).on('click', '#submitPayment', function (e) {
+            e.preventDefault();
+            $('#addPaymentForm').trigger('submit');
         });
-        // Form submission for edit
-        $('#submitEditPayment').click(function () {
-            // Trigger the submit event on the form loaded inside the modal
-            $('#editPaymentModalBody').find('#editPaymentForm').submit();
+
+        // Edit Payment Form Submit Trigger (delegated)
+        $(document).on('click', '#submitEditPayment', function (e) {
+            e.preventDefault();
+            // Trigger the form's submit event, which will be caught by the delegated handler below
+            $('#editPaymentForm').trigger('submit');
+        });
+
+        // Delegated form submission handler for editPaymentForm
+        $(document).on('submit', '#editPaymentForm', function (e) {
+            e.preventDefault();
+            console.log('Form submission intercepted by delegated handler for editPaymentForm');
+            window.submitEditPaymentForm();
+        });
+
+        // Delegated change handler for edit_method (for dynamically loaded forms)
+        $(document).on('change', '#edit_method', function () {
+            console.log('Payment method changed to:', $(this).val());
+            if ($(this).val() === 'other') {
+                $('#edit_customMethod').show().attr('required', true);
+                console.log('Showing custom method field');
+            } else {
+                $('#edit_customMethod').hide().removeAttr('required');
+                console.log('Hiding custom method field');
+            }
         });
 
         // Client filter handler
@@ -472,17 +523,14 @@ require_once __DIR__ . '/../../public/config.php';
             e.preventDefault();
             const client = $(this).data('client');
             const clientText = $(this).text();
-
             // Update the dropdown button text
             $('#clientFilterDropdown').html(
                 `<i class="fas fa-filter me-1"></i> ${client ? clientText : 'All Clients'}`
             );
-
             // Remove active class from all filters
             $('.client-filter').removeClass('active');
             // Add active class to clicked filter
             $(this).addClass('active');
-
             // Reload the table with the new filter
             paymentsTable.ajax.reload(function () {
                 showToast(`Filtered by: ${client ? clientText : 'All Clients'}`, 'info');
@@ -495,7 +543,7 @@ require_once __DIR__ . '/../../public/config.php';
             deletePaymentModal.hide();
         });
 
-        // Reset form when modal is hidden
+        // Reset form when add modal is hidden
         $('#addPaymentModal').on('hidden.bs.modal', function () {
             // Reset the form content to the loading spinner for next time
             $('#addPaymentModalBody').html(`
@@ -505,9 +553,8 @@ require_once __DIR__ . '/../../public/config.php';
                 </div>
                 <p class="mt-2">Loading payment form...</p>
             </div>
-        `);
+            `);
         });
-
         $('#addPaymentModal').on('show.bs.modal', loadAddPaymentForm);
     }
 
@@ -517,7 +564,6 @@ require_once __DIR__ . '/../../public/config.php';
             // Keep the "All Clients" option and divider
             const staticItems = menu.find('li:first, li:nth-child(2)');
             menu.empty().append(staticItems);
-
             if (data && data.length > 0) {
                 data.forEach(client => {
                     menu.append(`
@@ -532,9 +578,6 @@ require_once __DIR__ . '/../../public/config.php';
         });
     }
 
-    // Removed submitPaymentForm function as it's now handled by the form's own submit listener
-    // inside views/payments_manager/create.php
-
     function showEditModal(id) {
         currentPaymentId = id;
         $('#editPaymentModalBody').html(`
@@ -544,19 +587,28 @@ require_once __DIR__ . '/../../public/config.php';
             </div>
             <p class="mt-2">Loading payment details...</p>
         </div>
-    `);
-
+        `);
         editPaymentModal.show();
-
         // Corrected AJAX call to the controller route
         $.get(`<?= BASE_URL ?>/payments-manager/edit?id=${id}`, function (data) {
             $('#editPaymentModalBody').html(data);
+            // After content is loaded, trigger change to set custom method visibility
+            $('#editPaymentModalBody').find('#edit_method').trigger('change');
+            // Also log initial values after content is loaded
+            console.log('Initial form values after load:', {
+                payment_id: $('#editPaymentModalBody').find('input[name="payment_id"]').val(),
+                client_id: $('#editPaymentModalBody').find('input[name="client_id"]').val(),
+                amount: $('#editPaymentModalBody').find('#edit_amount').val(),
+                method: $('#editPaymentModalBody').find('#edit_method').val(),
+                payment_date: $('#editPaymentModalBody').find('#edit_payment_date').val(),
+                note: $('#editPaymentModalBody').find('#edit_note').val()
+            });
         }).fail(function () {
             $('#editPaymentModalBody').html(`
             <div class="alert alert-danger">
                 Failed to load payment details. Please try again.
             </div>
-        `);
+            `);
         });
     }
 
@@ -581,7 +633,7 @@ require_once __DIR__ . '/../../public/config.php';
                 showToast('Payment deleted successfully!', 'success');
             },
             error: function (xhr) {
-    const error = xhr.responseJSON ? xhr.responseJSON.error : 'Error deleting payment';
+                const error = xhr.responseJSON ? xhr.responseJSON.error : 'Error deleting payment';
                 showToast(error, 'danger');
             }
         });
@@ -589,12 +641,10 @@ require_once __DIR__ . '/../../public/config.php';
 
     function calculateVisibleTotal() {
         let total = 0;
-
         // Get visible rows data
         paymentsTable.rows({ page: 'current' }).data().each(function (row) {
             total += parseFloat(row.amount) || 0;
         });
-
         $('#totalAmount').text(total.toFixed(2));
     }
 
@@ -613,7 +663,6 @@ require_once __DIR__ . '/../../public/config.php';
             'warning': 'fa-exclamation-triangle',
             'info': 'fa-info-circle'
         };
-
         const toast = document.createElement('div');
         toast.id = toastId;
         toast.className = `toast align-items-center text-white bg-${type} border-0 position-fixed shadow-lg`;
@@ -626,24 +675,15 @@ require_once __DIR__ . '/../../public/config.php';
             </div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
-    `;
-
+        `;
         document.body.appendChild(toast);
         const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
         bsToast.show();
-
         setTimeout(() => {
             if (document.getElementById(toastId)) {
                 document.body.removeChild(toast);
             }
         }, 5000);
     }
-
-    // Set today's date as default
-    $(document).ready(function () {
-        const today = new Date().toISOString().split('T')[0];
-        $('#payment_date').val(today);
-    });
 </script>
-
 <?php include __DIR__ . '/../layouts/footer.php'; ?>
