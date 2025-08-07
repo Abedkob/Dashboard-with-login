@@ -1,6 +1,5 @@
 <?php
 // index.php - Front Controller
-
 session_start();
 
 // Enable error reporting & logging (disable display in production)
@@ -23,7 +22,6 @@ function url($path = '')
 // Load DB config and connect
 try {
     $dbConfig = require __DIR__ . '/../config/database.php';
-
     $pdo = new PDO(
         "mysql:host={$dbConfig['host']};dbname={$dbConfig['dbname']};charset=utf8mb4",
         $dbConfig['username'],
@@ -34,9 +32,11 @@ try {
             PDO::ATTR_EMULATE_PREPARES => false,
         ]
     );
-
     // Test connection
     $pdo->query("SELECT 1")->fetchColumn();
+
+    // Make PDO globally available
+    $GLOBALS['pdo'] = $pdo;
 } catch (PDOException $e) {
     die("Database connection failed: " . $e->getMessage());
 }
@@ -68,7 +68,6 @@ $request = '/' . trim($request, '/');
 error_log("Routing request: " . $request);
 
 // Routing
-
 switch ($request) {
     case '/':
     case '/login':
@@ -81,7 +80,6 @@ switch ($request) {
         break;
 
     case '/login/submit':
-
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo "Method Not Allowed";
@@ -159,19 +157,71 @@ switch ($request) {
         require __DIR__ . '/../src/Controllers/AuthController.php';
         (new App\Controllers\AuthController($pdo))->logout();
         break;
+
+    // ===== PAYMENTS MANAGER ROUTES =====
     case '/payments-manager':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->index();
         break;
+
     case '/payments-manager/create':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
-
-        $requestData = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-
-        (new App\Controllers\PaymentsController($pdo))->create($requestData);
+        $controller = new App\Controllers\PaymentsController($pdo);
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            $controller->createForm(); // This should load your form
+        } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $controller->create($_POST);
+        }
         break;
+
+    case '/payments-manager/datatable':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
+        (new App\Controllers\PaymentsController($pdo))->datatable();
+        break;
+
+    case '/payments-manager/get-clients':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
+        (new App\Controllers\PaymentsController($pdo))->getClients();
+        break;
+
+    case '/payments-manager/edit':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
+        $controller = new App\Controllers\PaymentsController($pdo);
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            $controller->edit(); // This method will load the view
+        }
+        break;
+
+    case '/payments-manager/update':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing payment ID']);
+            exit;
+        }
+        (new App\Controllers\PaymentsController($pdo))->update((int) $id);
+        break;
+
+    case '/payments-manager/delete':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
+        $id = $_POST['id'] ?? null;
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing payment ID']);
+            exit;
+        }
+        (new App\Controllers\PaymentsController($pdo))->delete((int) $id);
+        break;
+
+    // Additional payment routes for your existing methods
     case '/payments-manager/available-clients':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
@@ -189,36 +239,15 @@ switch ($request) {
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->searchClients();
         break;
+
     case '/payments-manager/get-payment':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->getPayment();
         break;
-    case '/payments-manager/update':
-        requireAuth();
-        require __DIR__ . '/../src/Controllers/PaymentsController.php';
-        $id = $_GET['id'] ?? null;
-        if (!$id) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Missing payment ID']);
-            exit;
-        }
-        $requestData = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-        (new App\Controllers\PaymentsController($pdo))->update((int) $id, $requestData);
-        break;
-    case '/payments-manager/delete':
-        requireAuth();
-        require __DIR__ . '/../src/Controllers/PaymentsController.php';
-        $id = $_POST['id'] ?? null;
-        if (!$id) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Missing payment ID']);
-            exit;
-        }
-        (new App\Controllers\PaymentsController($pdo))->delete((int) $id);
-        break;
+
     default:
         http_response_code(404);
-        echo "Page not found";
+        echo "Page not found: " . htmlspecialchars($request);
         break;
 }

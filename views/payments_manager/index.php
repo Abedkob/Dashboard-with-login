@@ -1,958 +1,649 @@
 <?php include __DIR__ . '/../layouts/header.php';
-require_once __DIR__ . '/../../public/config.php'; ?>
-<!DOCTYPE html>
-<html lang="en">
+require_once __DIR__ . '/../../public/config.php';
+?>
 
-<head>
-    <meta charset="UTF-8">
-    <title>Payments Manager</title>
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
-    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<!-- Custom Styles -->
+<style>
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+    }
 
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-    <style>
-        :root {
-            --primary-color: #6366f1;
-            --danger-color: #ef4444;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --dark-color: #1f2937;
-            --light-bg: #f8fafc;
-            --border-color: #e2e8f0;
+    .payment-amount {
+        font-family: 'Courier New', monospace;
+        background: #f8f9fa;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.15s ease-in-out;
+    }
+
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    @media (max-width: 768px) {
+        .btn-toolbar {
+            flex-direction: column;
+            gap: 0.5rem;
         }
+    }
 
-        .dt-buttons {
-            margin-bottom: 10px;
-        }
+    /* Modal specific styles */
+    .modal-content {
+        border: none;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
 
-        .total-display {
-            background: linear-gradient(135deg, var(--light-bg) 0%, #e2e8f0 100%);
-            padding: 12px 16px;
-            border-top: 3px solid var(--primary-color);
-            font-weight: 600;
-            text-align: right;
-            color: var(--dark-color);
-        }
+    .modal-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+    }
 
-        .modal-content {
-            border: none;
-            border-radius: 16px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        }
+    .modal-footer {
+        border-top: 1px solid #dee2e6;
+    }
 
-        .modal-header {
-            border-bottom: 1px solid var(--border-color);
-            padding: 24px 24px 16px;
-        }
+    .delete-modal-icon {
+        font-size: 3rem;
+        color: #dc3545;
+    }
 
-        .modal-body {
-            padding: 24px;
-        }
+    .total-display {
+        background: #f8f9fa;
+        padding: 12px 16px;
+        border-top: 2px solid #007bff;
+        font-weight: 600;
+        text-align: right;
+        color: #495057;
+    }
+</style>
 
-        .modal-footer {
-            border-top: 1px solid var(--border-color);
-            padding: 16px 24px 24px;
-        }
-
-        .btn-modern {
-            border-radius: 8px;
-            font-weight: 500;
-            padding: 8px 16px;
-            transition: all 0.2s ease;
-            border: none;
-        }
-
-        .btn-danger-modern {
-            background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%);
-            color: white;
-            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
-        }
-
-        .btn-danger-modern:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 15px -3px rgba(239, 68, 68, 0.4);
-            color: white;
-        }
-
-        .btn-secondary-modern {
-            background: #6b7280;
-            color: white;
-            border: 1px solid #6b7280;
-        }
-
-        .btn-secondary-modern:hover {
-            background: #4b5563;
-            border-color: #4b5563;
-            color: white;
-            transform: translateY(-1px);
-        }
-
-        .delete-warning-icon {
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-        }
-
-        .delete-warning-icon i {
-            font-size: 28px;
-            color: var(--danger-color);
-        }
-
-        .delete-modal-title {
-            color: var(--dark-color);
-            font-weight: 600;
-            font-size: 1.25rem;
-            text-align: center;
-        }
-
-        .delete-modal-text {
-            color: #6b7280;
-            text-align: center;
-            margin-bottom: 0;
-            line-height: 1.6;
-        }
-
-        .payment-details-card {
-            background: var(--light-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px;
-            margin: 16px 0;
-        }
-
-        .payment-detail-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-
-        .payment-detail-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .payment-detail-label {
-            font-weight: 500;
-            color: var(--dark-color);
-        }
-
-        .payment-detail-value {
-            color: #6b7280;
-            font-weight: 400;
-        }
-
-        .table .btn {
-            border-radius: 6px;
-            font-size: 0.875rem;
-            padding: 4px 12px;
-        }
-
-        .btn-outline-danger-modern {
-            color: var(--danger-color);
-            border: 1px solid var(--danger-color);
-            background: transparent;
-        }
-
-        .btn-outline-danger-modern:hover {
-            background: var(--danger-color);
-            border-color: var(--danger-color);
-            color: white;
-            transform: translateY(-1px);
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container mt-4">
-        <h1 class="mb-4">Payments Manager</h1>
-
-        <!-- New Payment Modal -->
-        <div class="modal fade" id="newPaymentModal" tabindex="-1" aria-labelledby="newPaymentModalLabel" role="dialog"
-            aria-modal="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="newPaymentModalLabel">Add New Payment</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="paymentForm">
-                            <div class="row mb-3">
-
-                                <div class="col-md-6">
-                                    <label for="availableClients" class="form-label">Or select from available
-                                        clients</label>
-                                    <select class="form-select" id="availableClients">
-                                        <option value="">Select a client</option>
-                                        <!-- Clients will be loaded dynamically -->
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="amount" class="form-label">Amount</label>
-                                    <input type="number" step="0.01" class="form-control" id="amount" name="amount"
-                                        required>
-                                    <div class="form-text">Negative values for refunds/credits</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="method" class="form-label">Payment Method</label>
-                                    <select class="form-select" id="method" name="method" required>
-                                        <option value="">Select method</option>
-                                        <option value="cash">Cash</option>
-                                        <option value="bank transfer">Bank Transfer</option>
-                                        <option value="credit card">Credit Card</option>
-                                        <option value="paypal">PayPal</option>
-                                        <option value="omt">OMT</option>
-                                        <option value="wish">Wish</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                    <input type="text" class="form-control mt-2" id="customMethod" name="customMethod"
-                                        placeholder="Enter custom method" style="display: none;">
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="payment_date" class="form-label">Payment Date</label>
-                                    <input type="date" class="form-control" id="payment_date" name="payment_date"
-                                        required>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="note" class="form-label">Note</label>
-                                <textarea class="form-control" id="note" name="note" rows="3"></textarea>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" id="submitPayment">Save Payment</button>
-                    </div>
-                </div>
-            </div>
+<!-- Page Header -->
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
+    <div class="d-flex align-items-center">
+        <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+            <i class="fas fa-credit-card text-primary fs-4"></i>
         </div>
-
-        <!-- Edit Payment Modal -->
-        <div class="modal fade" id="editPaymentModal" tabindex="-1" aria-labelledby="editPaymentModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="editPaymentModalLabel">Edit Payment</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="editPaymentForm">
-                            <input type="hidden" id="edit_payment_id" name="id">
-                            <div class="row mb-3" style="display: none;">
-                                <div class="col-md-6">
-                                    <label for="edit_client_id" class="form-label">Client ID</label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" id="edit_client_id" name="client_id"
-                                            required>
-                                        <button class="btn btn-outline-secondary" type="button"
-                                            id="edit_validateClientBtn">Validate</button>
-                                    </div>
-                                    <div id="edit_clientInfo" class="mt-2 text-success" style="display: none;">
-                                        <span id="edit_clientNameDisplay"></span>
-                                    </div>
-                                    <div id="edit_clientError" class="mt-2 text-danger" style="display: none;">
-                                        Client ID not found in projects list
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="edit_amount" class="form-label">Amount</label>
-                                    <input type="number" step="0.01" class="form-control" id="edit_amount" name="amount"
-                                        required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="edit_method" class="form-label">Payment Method</label>
-                                    <select class="form-select" id="edit_method" name="method" required>
-                                        <option value="">Select method</option>
-                                        <option value="cash">Cash</option>
-                                        <option value="bank transfer">Bank Transfer</option>
-                                        <option value="credit card">Credit Card</option>
-                                        <option value="paypal">PayPal</option>
-                                        <option value="omt">OMT</option>
-                                        <option value="wish">Wish</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                    <input type="text" class="form-control mt-2" id="edit_customMethod"
-                                        name="customMethod" placeholder="Enter custom method" style="display: none;">
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="edit_payment_date" class="form-label">Payment Date</label>
-                                    <input type="date" class="form-control" id="edit_payment_date" name="payment_date"
-                                        required>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="edit_note" class="form-label">Note</label>
-                                <textarea class="form-control" id="edit_note" name="note" rows="3"></textarea>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" id="updatePayment">Update Payment</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Delete Payment Modal -->
-        <div class="modal fade" id="deletePaymentModal" tabindex="-1" aria-labelledby="deletePaymentModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header border-0 pb-0">
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body text-center">
-                        <div class="delete-warning-icon">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                        </div>
-                        <h4 class="delete-modal-title mb-3">Delete Payment</h4>
-                        <p class="delete-modal-text mb-4">
-                            Are you sure you want to delete this payment? This action cannot be undone.
-                        </p>
-
-                        <div class="payment-details-card" id="deletePaymentDetails">
-                            <!-- Payment details will be populated here -->
-                        </div>
-                    </div>
-                    <div class="modal-footer border-0 pt-0 justify-content-center gap-3">
-                        <button type="button" class="btn btn-secondary-modern btn-modern" data-bs-dismiss="modal">
-                            <i class="bi bi-x-circle me-2"></i>Cancel
-                        </button>
-                        <button type="button" class="btn btn-danger-modern btn-modern" id="confirmDeletePayment">
-                            <i class="bi bi-trash3 me-2"></i>Delete Payment
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newPaymentModal">
-                Add New Payment
+        <h1 class="h2 mb-0 text-dark fw-bold">Payments Manager</h1>
+    </div>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
+                data-bs-target="#addPaymentModal">
+                <i class="fas fa-plus me-2"></i>Add New Payment
             </button>
         </div>
+    </div>
+</div>
 
-        <?php if (empty($payments)): ?>
-            <div class="alert alert-info">No payments found.</div>
-        <?php else: ?>
-            <table id="paymentsTable" class="table table-striped table-bordered" style="width:100%">
-                <thead>
+<!-- Success Alert -->
+<?php if (isset($_SESSION['success'])): ?>
+    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fas fa-check-circle me-2"></i>
+        <strong>Success!</strong> <?= $_SESSION['success'] ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php unset($_SESSION['success']); ?>
+<?php endif; ?>
+
+<!-- Add Payment Modal -->
+<div class="modal fade" id="addPaymentModal" tabindex="-1" aria-labelledby="addPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addPaymentModalLabel">
+                    <i class="fas fa-plus-circle me-2"></i>Add New Payment
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="addPaymentModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading payment form...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="submitPayment">Save Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Payment Modal -->
+<div class="modal fade" id="editPaymentModal" tabindex="-1" aria-labelledby="editPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editPaymentModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edit Payment
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="editPaymentModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading payment details...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="submitEditPayment">Update Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deletePaymentModal" tabindex="-1" aria-labelledby="deletePaymentModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deletePaymentModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="delete-modal-icon mb-3 fs-1 text-danger">
+                    <i class="fas fa-trash-alt"></i>
+                </div>
+                <h5 class="text-dark">Are you sure you want to delete this payment?</h5>
+                <p class="text-muted">This action cannot be undone. All data associated with this payment will be
+                    permanently removed.</p>
+                <div class="payment-info bg-white border p-3 rounded mt-3 mb-3 shadow-sm">
+                    <p class="mb-1"><strong>Payment ID:</strong> <span id="deletePaymentId"></span></p>
+                    <p class="mb-1"><strong>Client:</strong> <span id="deletePaymentClient"></span></p>
+                    <p class="mb-0"><strong>Amount:</strong> <span id="deletePaymentAmount"></span></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash-alt me-2"></i>Delete Payment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payments Table -->
+<div class="card shadow-sm">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 d-flex align-items-center">
+                <i class="fas fa-table me-2 text-primary"></i>
+                Payments Database
+            </h5>
+            <div class="d-flex">
+                <!-- Client Filter Dropdown -->
+                <div class="dropdown me-2">
+                    <button class="btn btn-light dropdown-toggle" type="button" id="clientFilterDropdown"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-filter me-1"></i> Client
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="clientFilterDropdown" id="clientFilterMenu">
+                        <li><a class="dropdown-item client-filter" href="#" data-client="">All Clients</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <!-- Client options will be populated dynamically -->
+                    </ul>
+                </div>
+                <small class="text-muted" id="datatable-info">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Loading payments...
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table id="payments-table" class="table table-hover mb-0" style="width:100%">
+                <thead class="table-light">
                     <tr>
-                        <th>ID</th>
-                        <th>Client</th>
-                        <th>Amount</th>
-                        <th>Method</th>
-                        <th>Payment Date</th>
-                        <th>Note</th>
-                        <th>Created At</th>
-                        <th>Actions</th>
+                        <th><i class="fas fa-hashtag me-1"></i>ID</th>
+                        <th><i class="fas fa-user me-1"></i>Client</th>
+                        <th><i class="fas fa-dollar-sign me-1"></i>Amount</th>
+                        <th><i class="fas fa-credit-card me-1"></i>Method</th>
+                        <th><i class="fas fa-calendar me-1"></i>Payment Date</th>
+                        <th><i class="fas fa-sticky-note me-1"></i>Note</th>
+                        <th><i class="fas fa-clock me-1"></i>Created At</th>
+                        <th width="150" class="text-center"><i class="fas fa-cogs me-1"></i>Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <?php foreach ($payments as $payment): ?>
-                        <tr>
-                            <td><?= htmlspecialchars($payment['id']) ?></td>
-                            <td>
-                                <?= htmlspecialchars($payment['Client'] ?? 'N/A') ?>
-                                <span style="display:none"><?= htmlspecialchars($payment['client_id']) ?></span>
-                            </td>
-                            <td data-order="<?= $payment['amount'] ?>">
-                                <?= htmlspecialchars(number_format($payment['amount'], 2)) ?>
-                            </td>
-                            <td><?= htmlspecialchars($payment['method']) ?></td>
-                            <td><?= htmlspecialchars($payment['payment_date']) ?></td>
-                            <td><?= nl2br(htmlspecialchars($payment['note'])) ?></td>
-                            <td><?= htmlspecialchars($payment['created_at']) ?></td>
-                            <td>
-                                <button class="btn btn-sm btn-primary edit-payment me-1" data-id="<?= $payment['id'] ?>">
-                                    <i class="bi bi-pencil"></i> Edit
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger-modern delete-payment"
-                                    data-id="<?= $payment['id'] ?>"
-                                    data-client="<?= htmlspecialchars($payment['Client'] ?? 'N/A') ?>"
-                                    data-amount="<?= htmlspecialchars(number_format($payment['amount'], 2)) ?>"
-                                    data-method="<?= htmlspecialchars($payment['method']) ?>"
-                                    data-date="<?= htmlspecialchars($payment['payment_date']) ?>">
-                                    <i class="bi bi-trash3"></i> Delete
-                                </button>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
+                <tbody></tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="7" class="total-display">Total Amount: <span id="totalAmount">0.00</span></td>
+                        <td colspan="7" class="total-display">
+                            <strong>Total Amount (Current Page): $<span id="totalAmount">0.00</span></strong>
+                        </td>
                         <td></td>
                     </tr>
                 </tfoot>
             </table>
-            <div class="mb-4">
-                <div id="exportButtons"></div>
-            </div>
-        <?php endif; ?>
+        </div>
     </div>
+</div>
 
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.bootstrap5.min.css">
 
-    <script>
-        let table;
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.print.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
 
-        $(document).ready(function () {
-            table = $('#paymentsTable').DataTable({
-                pageLength: 10,
-                order: [[0, 'desc']],
-                dom: '<"top"Bf>rt<"bottom"lip>',
-                buttons: [
-                    {
-                        extend: 'copy',
-                        text: 'Copy to clipboard',
-                        className: 'btn btn-secondary btn-sm'
-                    },
-                    {
-                        extend: 'csv',
-                        text: 'Export to CSV',
-                        className: 'btn btn-secondary btn-sm'
-                    },
-                    {
-                        extend: 'excel',
-                        text: 'Export to Excel',
-                        className: 'btn btn-secondary btn-sm'
-                    },
-                    {
-                        extend: 'pdf',
-                        text: 'Export to PDF',
-                        className: 'btn btn-secondary btn-sm'
-                    },
-                    {
-                        extend: 'print',
-                        text: 'Print',
-                        className: 'btn btn-secondary btn-sm'
-                    }
+<script>
+    // Global variables
+    let paymentsTable;
+    let currentPaymentId = null;
+    let addPaymentModal, editPaymentModal, deletePaymentModal;
 
-                ],
-                initComplete: function () {
-                    this.api().buttons().container().appendTo('#exportButtons');
+    $(document).ready(function () {
+        // Initialize modals
+        addPaymentModal = new bootstrap.Modal(document.getElementById('addPaymentModal'));
+        editPaymentModal = new bootstrap.Modal(document.getElementById('editPaymentModal'));
+        deletePaymentModal = new bootstrap.Modal(document.getElementById('deletePaymentModal'));
+
+        // Initialize DataTable
+        initializeDataTable();
+
+        // Load client filter options
+        loadClientFilterOptions();
+
+        // Bind events
+        bindEvents();
+    });
+
+    function initializeDataTable() {
+        paymentsTable = $('#payments-table').DataTable({
+            serverSide: true,
+            ajax: {
+                url: '<?= BASE_URL ?>/payments-manager/datatable',
+                type: 'POST',
+                data: function (d) {
+                    const selectedClient = $('.client-filter.active').data('client') || '';
+                    d.client_filter = selectedClient;
+                }
+            },
+            columns: [
+                {
+                    data: 'id',
+                    className: 'fw-bold text-primary'
                 },
-                footerCallback: function (row, data, start, end, display) {
-                    var api = this.api();
-                    var intVal = function (i) {
-                        return typeof i === 'string' ?
-                            parseFloat(i.replace(/[^\d.-]/g, '')) :
-                            typeof i === 'number' ?
-                                i : 0;
-                    };
-                    var total = api
-                        .column(2, { search: 'applied' })
-                        .data()
-                        .reduce(function (a, b) {
-                            return intVal(a) + intVal(b);
-                        }, 0);
-                    $('#totalAmount').text(total.toFixed(3));
-                },
-                drawCallback: function () {
-                    var api = this.api();
-                    var intVal = function (i) {
-                        return typeof i === 'string' ?
-                            parseFloat(i.replace(/[^\d.-]/g, '')) :
-                            typeof i === 'number' ?
-                                i : 0;
-                    };
-                    var total = api
-                        .column(2, { search: 'applied' })
-                        .data()
-                        .reduce(function (a, b) {
-                            return intVal(a) + intVal(b);
-                        }, 0);
-                    $('#totalAmount').text(total.toFixed(2));
-                }
-            });
-
-            calculateTotal();
-
-            function calculateTotal() {
-                var total = 0;
-                table.column(2, { search: 'applied' }).data().each(function (value) {
-                    total += parseFloat(value) || 0;
-                });
-                $('#totalAmount').text(total.toFixed(2));
-            }
-
-            table.on('search.dt', function () {
-                calculateTotal();
-            });
-        });
-    </script>
-
-    <script>
-
-        $(document).ready(function () {
-            // Delete Payment Modal Handling
-            let paymentToDelete = null;
-
-            $(document).on('click', '.delete-payment', function () {
-                paymentToDelete = $(this).data('id');
-                const client = $(this).data('client');
-                const amount = $(this).data('amount');
-                const method = $(this).data('method');
-                const date = $(this).data('date');
-
-                // Populate payment details in modal
-                const detailsHtml = `
-                    <div class="payment-detail-row">
-                        <span class="payment-detail-label">Payment ID:</span>
-                        <span class="payment-detail-value">#${paymentToDelete}</span>
-                    </div>
-                    <div class="payment-detail-row">
-                        <span class="payment-detail-label">Client:</span>
-                        <span class="payment-detail-value">${client}</span>
-                    </div>
-                    <div class="payment-detail-row">
-                        <span class="payment-detail-label">Amount:</span>
-                        <span class="payment-detail-value">$${amount}</span>
-                    </div>
-                    <div class="payment-detail-row">
-                        <span class="payment-detail-label">Method:</span>
-                        <span class="payment-detail-value">${method}</span>
-                    </div>
-                    <div class="payment-detail-row">
-                        <span class="payment-detail-label">Date:</span>
-                        <span class="payment-detail-value">${date}</span>
-                    </div>
-                `;
-
-                $('#deletePaymentDetails').html(detailsHtml);
-                $('#deletePaymentModal').modal('show');
-            });
-
-            // Confirm delete payment
-            $('#confirmDeletePayment').click(function () {
-                if (!paymentToDelete) return;
-
-                const $button = $(this);
-                const originalText = $button.html();
-
-                // Show loading state
-                $button.html('<i class="bi bi-hourglass-split me-2"></i>Deleting...').prop('disabled', true);
-
-                $.ajax({
-                    url: '<?= url('payments-manager/delete') ?>',
-                    method: 'POST',
-                    data: { id: paymentToDelete },
-                    dataType: 'json',
-                    success: function (response) {
-                        if (response.error) {
-                            alert(response.error);
-                        } else {
-                            // Show success message
-                            const toast = `
-                                <div class="toast-container position-fixed top-0 end-0 p-3">
-                                    <div class="toast show" role="alert">
-                                        <div class="toast-header bg-success text-white">
-                                            <i class="bi bi-check-circle-fill me-2"></i>
-                                            <strong class="me-auto">Success</strong>
-                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-                                        </div>
-                                        <div class="toast-body">
-                                            Payment deleted successfully!
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                            $('body').append(toast);
-
-                            // Auto-hide toast after 3 seconds
-                            setTimeout(() => {
-                                $('.toast').toast('hide');
-                            }, 3000);
-
-                            $('#deletePaymentModal').modal('hide');
-
-                            // Reload only the DataTable
-                            table.ajax.reload(null, false);
-                        }
-                    },
-                    error: function (xhr) {
-                        try {
-                            const error = xhr.responseJSON ? xhr.responseJSON.error : xhr.responseText;
-                            alert(error || 'An error occurred while deleting the payment');
-                        } catch (e) {
-                            alert('An error occurred while deleting the payment');
-                        }
-                        console.error("Delete error:", xhr.responseText);
-                    },
-                    complete: function () {
-                        // Reset button state
-                        $button.html(originalText).prop('disabled', false);
-                        paymentToDelete = null;
-                    }
-                });
-            });
-
-            // Reset modal when closed
-            $('#deletePaymentModal').on('hidden.bs.modal', function () {
-                paymentToDelete = null;
-                $('#confirmDeletePayment').html('<i class="bi bi-trash3 me-2"></i>Delete Payment').prop('disabled', false);
-            });
-        });
-    </script>
-    <script>
-        $(document).ready(function () {
-
-            // Load available clients when modal is shown
-            $('#newPaymentModal').on('show.bs.modal', function () {
-                loadAvailableClients();
-            });
-
-            // Toggle custom method input
-            $('#method').change(function () {
-                if ($(this).val() === 'other') {
-                    $('#customMethod').show().attr('required', true);
-                } else {
-                    $('#customMethod').hide().removeAttr('required');
-                }
-            });
-
-            // Form submission
-            $('#submitPayment').click(function () {
-                const formData = {
-                    client_id: $('#availableClients').val(), // Only dropdown selection
-                    amount: $('#amount').val(),
-                    method: $('#method').val() === 'other' ? $('#customMethod').val() : $('#method').val(),
-                    payment_date: $('#payment_date').val(),
-                    note: $('#note').val()
-                };
-
-                if (!formData.client_id) {
-                    alert('Please select a client from the dropdown');
-                    return;
-                }
-
-                const $button = $(this);
-                const originalText = $button.html();
-                $button.html('<i class="bi bi-hourglass-split me-2"></i>Saving...').prop('disabled', true);
-
-                $.ajax({
-                    url: '<?= url('payments-manager/create') ?>',
-                    method: 'POST',
-                    data: formData,
-                    dataType: 'json',
-                    success: function (response) {
-                        if (response.error) {
-                            alert(response.error);
-                        } else {
-                            // Show success toast
-                            const toast = `
-                        <div class="toast-container position-fixed top-0 end-0 p-3">
-                            <div class="toast show" role="alert">
-                                <div class="toast-header bg-success text-white">
-                                    <i class="bi bi-check-circle-fill me-2"></i>
-                                    <strong class="me-auto">Success</strong>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-                                </div>
-                                <div class="toast-body">
-                                    Payment created successfully!
-                                </div>
-                            </div>
+                {
+                    data: 'client_name',
+                    render: function (data, type, row) {
+                        return `<div class="d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                            <i class="fas fa-user text-primary"></i>
                         </div>
-                    `;
-                            $('body').append(toast);
-                            setTimeout(() => $('.toast').toast('hide'), 3000);
-
-                            $('#newPaymentModal').modal('hide');
-                            table.ajax.reload(null, false);
-                        }
-                    },
-                    error: function (xhr) {
-                        try {
-                            const error = xhr.responseJSON ? xhr.responseJSON.error : xhr.responseText;
-                            alert(error || 'An error occurred while creating the payment');
-                        } catch (e) {
-                            alert('An error occurred while creating the payment');
-                        }
-                    },
-                    complete: function () {
-                        $button.html(originalText).prop('disabled', false);
+                        <div>
+                            <span class="fw-semibold">${data || 'N/A'}</span>
+                            <br><small class="text-muted">ID: ${row.client_id}</small>
+                        </div>
+                    </div>`;
                     }
-                });
+                },
+                {
+                    data: 'amount',
+                    render: function (data, type, row) {
+                        const amount = parseFloat(data);
+                        const colorClass = amount >= 0 ? 'text-success' : 'text-danger';
+                        const sign = amount >= 0 ? '+' : '';
+                        return `<span class="payment-amount ${colorClass}">
+                        ${sign}$${Math.abs(amount).toFixed(2)}
+                    </span>`;
+                    }
+                },
+                {
+                    data: 'method',
+                    render: function (data, type, row) {
+                        return `<span class="badge bg-light text-dark border">
+                        <i class="fas fa-credit-card me-1"></i>${data}
+                    </span>`;
+                    }
+                },
+                {
+                    data: 'payment_date',
+                    render: function (data, type, row) {
+                        return `<span class="badge bg-light text-dark border">
+                        <i class="fas fa-calendar me-1"></i>${data}
+                    </span>`;
+                    }
+                },
+                {
+                    data: 'note',
+                    render: function (data, type, row) {
+                        if (!data) return '<span class="text-muted">-</span>';
+                        const truncated = data.length > 50 ? data.substring(0, 50) + '...' : data;
+                        return `<span title="${data}">${truncated}</span>`;
+                    }
+                },
+                {
+                    data: 'created_at',
+                    render: function (data, type, row) {
+                        return `<span class="badge bg-light text-dark border">
+                        <i class="fas fa-clock me-1"></i>${data}
+                    </span>`;
+                    }
+                },
+                {
+                    data: 'id',
+                    orderable: false,
+                    className: 'text-center',
+                    render: function (data, type, row) {
+                        return `<div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary"
+                                onclick="showEditModal(${data})" title="Edit Payment">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-danger"
+                                onclick="showDeleteModal(${data}, '${row.client_name || 'N/A'}', '${row.amount}')" title="Delete Payment">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>`;
+                    }
+                }
+            ],
+            order: [[0, 'desc']],
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            dom: '<"top"Bfl>rt<"bottom"ip>',
+            buttons: [
+                {
+                    extend: 'csv',
+                    text: '<i class="fas fa-file-csv me-2"></i>CSV',
+                    className: 'btn btn-light btn-sm border mx-1',
+                    exportOptions: {
+                        columns: ':visible',
+                        modifier: { search: 'applied' }
+                    }
+                },
+                {
+                    extend: 'excel',
+                    text: '<i class="fas fa-file-excel me-2"></i>Excel',
+                    className: 'btn btn-light btn-sm border mx-1',
+                    exportOptions: {
+                        columns: ':visible',
+                        modifier: { search: 'applied' }
+                    }
+                },
+                {
+                    extend: 'pdf',
+                    text: '<i class="fas fa-file-pdf me-2"></i>PDF',
+                    className: 'btn btn-light btn-sm border mx-1',
+                    exportOptions: {
+                        columns: ':visible',
+                        modifier: { search: 'applied' }
+                    }
+                },
+                {
+                    extend: 'print',
+                    text: '<i class="fas fa-print me-2"></i>Print',
+                    className: 'btn btn-light btn-sm border mx-1',
+                    exportOptions: {
+                        columns: ':visible',
+                        modifier: { search: 'applied' }
+                    }
+                }
+            ],
+            language: {
+                processing: '<div class="d-flex justify-content-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>',
+                emptyTable: '<div class="text-center py-4"><i class="fas fa-inbox fa-3x text-muted mb-3"></i><br><h5 class="text-muted">No payments found</h5><p class="text-muted">Try adjusting your search criteria</p></div>',
+                zeroRecords: '<div class="text-center py-4"><i class="fas fa-search fa-3x text-muted mb-3"></i><br><h5 class="text-muted">No matching records found</h5><p class="text-muted">Try different search terms</p></div>'
+            },
+            drawCallback: function () {
+                updateTableInfo();
+                calculateVisibleTotal();
+            }
+        });
+    }
+
+    function loadAddPaymentForm() {
+        $('#addPaymentModalBody').html(`
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading payment form...</p>
+        </div>
+    `);
+
+        // Corrected AJAX call to the controller route
+        $.get('<?= BASE_URL ?>/payments-manager/create', function (data) {
+            $('#addPaymentModalBody').html(data);
+        }).fail(function () {
+            $('#addPaymentModalBody').html(`
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Failed to load form. Please try again.
+            </div>
+        `);
+        });
+    }
+
+    function bindEvents() {
+        // Toggle custom method input
+        // This logic is now inside views/payments_manager/create.php and views/payments_manager/edit.php
+        // and will be re-initialized when the form is loaded into the modal.
+
+        // Form submission for add
+        $('#submitPayment').click(function () {
+            // Trigger the submit event on the form loaded inside the modal
+            $('#addPaymentModalBody').find('#addPaymentForm').submit();
+        });
+        // Form submission for edit
+        $('#submitEditPayment').click(function () {
+            // Trigger the submit event on the form loaded inside the modal
+            $('#editPaymentModalBody').find('#editPaymentForm').submit();
+        });
+
+        // Client filter handler
+        $(document).on('click', '.client-filter', function (e) {
+            e.preventDefault();
+            const client = $(this).data('client');
+            const clientText = $(this).text();
+
+            // Update the dropdown button text
+            $('#clientFilterDropdown').html(
+                `<i class="fas fa-filter me-1"></i> ${client ? clientText : 'All Clients'}`
+            );
+
+            // Remove active class from all filters
+            $('.client-filter').removeClass('active');
+            // Add active class to clicked filter
+            $(this).addClass('active');
+
+            // Reload the table with the new filter
+            paymentsTable.ajax.reload(function () {
+                showToast(`Filtered by: ${client ? clientText : 'All Clients'}`, 'info');
             });
+        });
 
-            // Load available clients into dropdown
-            function loadAvailableClients() {
-                $.ajax({
-                    url: '<?= url('payments-manager/available-clients') ?>',
-                    method: 'GET',
-                    dataType: 'json',
-                    success: function (data) {
-                        const select = $('#availableClients');
-                        select.empty().append('<option value="">Select a client</option>');
+        // Confirm delete button handler
+        $('#confirmDeleteBtn').on('click', function () {
+            deletePayment(currentPaymentId);
+            deletePaymentModal.hide();
+        });
 
-                        if (Array.isArray(data)) {
-                            // Store clients data for filtering
-                            window.availableClients = data;
+        // Reset form when modal is hidden
+        $('#addPaymentModal').on('hidden.bs.modal', function () {
+            // Reset the form content to the loading spinner for next time
+            $('#addPaymentModalBody').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading payment form...</p>
+            </div>
+        `);
+        });
 
-                            data.forEach(client => {
-                                select.append(`<option value="${client.id}">${client.id} - ${client.name}</option>`);
-                            });
+        $('#addPaymentModal').on('show.bs.modal', loadAddPaymentForm);
+    }
 
-                            // Initialize select2 for searchable dropdown
-                            select.select2({
-                                placeholder: "Search for a client...",
-                                allowClear: true,
-                                width: '100%',
-                                dropdownParent: $('#newPaymentModal')
-                            });
+    function loadClientFilterOptions() {
+        $.get('<?= BASE_URL ?>/payments-manager/get-clients', function (data) {
+            const menu = $('#clientFilterMenu');
+            // Keep the "All Clients" option and divider
+            const staticItems = menu.find('li:first, li:nth-child(2)');
+            menu.empty().append(staticItems);
 
-                            // Add search box above dropdown
-                            $('.select2-container').prepend('<div class="client-search-box mb-2 p-2 border-bottom"><input type="text" class="form-control form-control-sm" id="clientSearchInput" placeholder="Type to filter clients..."></div>');
-
-                            // Filter functionality
-                            $('#clientSearchInput').on('input', function () {
-                                const searchTerm = $(this).val().toLowerCase();
-                                if (searchTerm.length > 0) {
-                                    const filteredClients = window.availableClients.filter(client =>
-                                        client.name.toLowerCase().includes(searchTerm) ||
-                                        client.id.toString().includes(searchTerm)
-                                    );
-
-                                    select.empty().append('<option value="">Select a client</option>');
-                                    filteredClients.forEach(client => {
-                                        select.append(`<option value="${client.id}">${client.id} - ${client.name}</option>`);
-                                    });
-                                } else {
-                                    // Reset to all clients when search is cleared
-                                    select.empty().append('<option value="">Select a client</option>');
-                                    window.availableClients.forEach(client => {
-                                        select.append(`<option value="${client.id}">${client.id} - ${client.name}</option>`);
-                                    });
-                                }
-                            });
-                        } else {
-                            console.error('Expected array but got:', data);
-                        }
-                    },
-                    error: function (xhr) {
-                        console.error('Error loading available clients:', xhr.responseText);
-                    }
+            if (data && data.length > 0) {
+                data.forEach(client => {
+                    menu.append(`
+                    <li><a class="dropdown-item client-filter" href="#" data-client="${client.client_id}">
+                        ${client.client_name} (ID: ${client.client_id})
+                    </a></li>
+                `);
                 });
             }
-
-
+        }).fail(function () {
+            console.error('Failed to load client filter options');
         });
-    </script>
-    <script>
-        $(document).ready(function () {
-            // Initialize Select2 when modal is shown
-            $('#newPaymentModal').on('shown.bs.modal', function () {
-                $('#availableClients').select2({
-                    placeholder: "Search for a client...",
-                    allowClear: true,
-                    width: '100%',
-                    dropdownParent: $('#newPaymentModal'),
-                    ajax: {
-                        url: '<?= url('payments-manager/available-clients') ?>',
-                        dataType: 'json',
-                        delay: 250,
-                        processResults: function (data) {
-                            return {
-                                results: $.map(data, function (item) {
-                                    return {
-                                        id: item.id,
-                                        text: item.id + ' - ' + item.name
-                                    }
-                                })
-                            };
-                        },
-                        cache: true
-                    }
-                });
-            });
+    }
 
-            // Destroy Select2 when modal is hidden
-            $('#newPaymentModal').on('hidden.bs.modal', function () {
-                if ($('#availableClients').hasClass('select2-hidden-accessible')) {
-                    $('#availableClients').select2('destroy');
-                }
-            });
-    </script>
+    // Removed submitPaymentForm function as it's now handled by the form's own submit listener
+    // inside views/payments_manager/create.php
 
-    <script>
-            $(document).ready(function () {
-                $(document).on('click', '.edit-payment', function () {
-                    const paymentId = $(this).data('id');
-                    console.log("Edit button clicked for payment ID:", paymentId);
+    function showEditModal(id) {
+        currentPaymentId = id;
+        $('#editPaymentModalBody').html(`
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading payment details...</p>
+        </div>
+    `);
 
-                    $('#edit_clientInfo').hide();
-                    $('#edit_clientError').hide();
+        editPaymentModal.show();
 
-                    $.getJSON('<?= url('payments-manager/get-payment') ?>', { id: paymentId })
-                        .done(function (response) {
-                            if (response && response.data) {
-                                const payment = response.data;
-                                $('#edit_payment_id').val(payment.id);
-                                $('#edit_client_id').val(payment.client_id);
-                                $('#edit_amount').val(payment.amount);
-                                $('#edit_payment_date').val(payment.payment_date);
-                                $('#edit_note').val(payment.note || '');
+        // Corrected AJAX call to the controller route
+        $.get(`<?= BASE_URL ?>/payments-manager/edit?id=${id}`, function (data) {
+            $('#editPaymentModalBody').html(data);
+        }).fail(function () {
+            $('#editPaymentModalBody').html(`
+            <div class="alert alert-danger">
+                Failed to load payment details. Please try again.
+            </div>
+        `);
+        });
+    }
 
-                                const methodSelect = $('#edit_method');
-                                methodSelect.val(payment.method);
-                                if (payment.method === 'other') {
-                                    $('#edit_customMethod').show().val(payment.method).attr('required', true);
-                                } else {
-                                    $('#edit_customMethod').hide().removeAttr('required');
-                                }
+    function showDeleteModal(id, client, amount) {
+        currentPaymentId = id;
+        $('#deletePaymentId').text(id);
+        $('#deletePaymentClient').text(client);
+        $('#deletePaymentAmount').text('$' + parseFloat(amount).toFixed(2));
+        deletePaymentModal.show();
+    }
 
-                                validateEditClientId(payment.client_id);
-                                loadEditAvailableClients();
-                                $('#editPaymentModal').modal('show');
-                            } else {
-                                console.error("No payment data in response");
-                                alert('No payment data found in response');
-                            }
-                        })
-                        .fail(function (xhr, status, error) {
-                            console.error("Error loading payment data:", error, xhr.responseText);
-                            alert('Error loading payment data: ' + error);
-                        });
-                });
+    function deletePayment(id) {
+        $.ajax({
+            url: `<?= BASE_URL ?>/payments-manager/delete`,
+            type: 'POST',
+            data: { id: id },
+            beforeSend: function () {
+                showToast('Deleting payment...', 'info');
+            },
+            success: function (response) {
+                paymentsTable.ajax.reload();
+                showToast('Payment deleted successfully!', 'success');
+            },
+            error: function (xhr) {
+    const error = xhr.responseJSON ? xhr.responseJSON.error : 'Error deleting payment';
+                showToast(error, 'danger');
+            }
+        });
+    }
 
-                // Update payment
-                $('#updatePayment').click(function () {
-                    const paymentId = $('#edit_payment_id').val();
-                    if (!paymentId) {
-                        alert('Payment ID is missing');
-                        return;
-                    }
+    function calculateVisibleTotal() {
+        let total = 0;
 
-                    const formData = {
-                        id: paymentId,
-                        client_id: $('#edit_client_id').val(),
-                        amount: $('#edit_amount').val(),
-                        method: $('#edit_method').val() === 'other' ? $('#edit_customMethod').val() : $('#edit_method').val(),
-                        payment_date: $('#edit_payment_date').val(),
-                        note: $('#edit_note').val()
-                    };
+        // Get visible rows data
+        paymentsTable.rows({ page: 'current' }).data().each(function (row) {
+            total += parseFloat(row.amount) || 0;
+        });
 
-                    console.log("Submitting update for payment ID:", paymentId, "with data:", formData);
+        $('#totalAmount').text(total.toFixed(2));
+    }
 
-                    $.ajax({
-                        url: '<?= url('payments-manager/update?id=') ?>' + paymentId,
-                        method: 'POST',
-                        data: formData,
-                        dataType: 'json',
-                        success: function (response) {
-                            if (response.error) {
-                                alert(response.error);
-                            } else {
-                                alert('Payment updated successfully!');
-                                $('#editPaymentModal').modal('hide');
-                                table.ajax.reload(null, false);
-                            }
-                        },
-                        error: function (xhr) {
-                            try {
-                                const error = xhr.responseJSON ? xhr.responseJSON.error : xhr.responseText;
-                                alert(error || 'An error occurred');
-                            } catch (e) {
-                                alert('An error occurred while processing the request');
-                            }
-                            console.error("Update error:", xhr.responseText);
-                        }
-                    });
-                });
+    function updateTableInfo() {
+        const info = paymentsTable.page.info();
+        $('#datatable-info').html(
+            `<i class="fas fa-info-circle me-1"></i>Showing ${info.start + 1} to ${info.end} of ${info.recordsTotal} payments`
+        );
+    }
 
-                // Client validation for edit form
-                function validateEditClientId(clientId = null) {
-                    const idToValidate = clientId || $('#edit_client_id').val();
-                    if (!idToValidate) return;
+    function showToast(message, type) {
+        const toastId = 'toast-' + Date.now();
+        const iconMap = {
+            'success': 'fa-check-circle',
+            'danger': 'fa-exclamation-circle',
+            'warning': 'fa-exclamation-triangle',
+            'info': 'fa-info-circle'
+        };
 
-                    $.getJSON('<?= url('payments-manager/validate-client') ?>', { client_id: idToValidate })
-                        .done(function (data) {
-                            if (data.valid) {
-                                $('#edit_clientError').hide();
-                                $('#edit_clientInfo').show();
-                                $('#edit_clientNameDisplay').text(`Valid client: ${data.client_name}`);
-                            } else {
-                                $('#edit_clientInfo').hide();
-                                $('#edit_clientError').show();
-                            }
-                        })
-                        .fail(function () {
-                            $('#edit_clientError').text('Error validating client').show();
-                            $('#edit_clientInfo').hide();
-                        });
-                }
+        const toast = document.createElement('div');
+        toast.id = toastId;
+        toast.className = `toast align-items-center text-white bg-${type} border-0 position-fixed shadow-lg`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body d-flex align-items-center">
+                <i class="fas ${iconMap[type]} me-2 fs-5"></i>
+                <span>${message}</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
 
-                // Load available clients for edit form
-                function loadEditAvailableClients() {
-                    $.getJSON('<?= url('payments-manager/available-clients') ?>')
-                        .done(function (data) {
-                            const select = $('#edit_availableClients');
-                            select.empty().append('<option value="">Select a client</option>');
-                            if (Array.isArray(data)) {
-                                data.forEach(client => {
-                                    select.append(`<option value="${client.id}">${client.id} - ${client.name}</option>`);
-                                });
-                            }
-                        })
-                        .fail(function (error) {
-                            console.error("Error loading available clients:", error);
-                        });
-                }
+        document.body.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
+        bsToast.show();
 
-                // Toggle custom method input for edit form
-                $('#edit_method').change(function () {
-                    if ($(this).val() === 'other') {
-                        $('#edit_customMethod').show().attr('required', true);
-                    } else {
-                        $('#edit_customMethod').hide().removeAttr('required');
-                    }
-                });
+        setTimeout(() => {
+            if (document.getElementById(toastId)) {
+                document.body.removeChild(toast);
+            }
+        }, 5000);
+    }
 
-                // Handle selection from edit available clients dropdown
-                $('#edit_availableClients').change(function () {
-                    const clientId = $(this).val();
-                    if (clientId) {
-                        $('#edit_availableClients').val(clientId);
-                        validateEditClientId(clientId);
-                    }
-                });
-            });
-    </script>
-</body>
+    // Set today's date as default
+    $(document).ready(function () {
+        const today = new Date().toISOString().split('T')[0];
+        $('#payment_date').val(today);
+    });
+</script>
 
-</html>
 <?php include __DIR__ . '/../layouts/footer.php'; ?>

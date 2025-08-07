@@ -20,15 +20,6 @@
             </div>
         </div>
 
-        <!-- Version info -->
-        <div class="row mt-2">
-            <div class="col-12 text-center">
-                <small class="text-muted">
-                    Version 2.0.1 | Built with <i class="fas fa-heart text-danger"></i> for secure license management
-                </small>
-            </div>
-        </div>
-    </div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
