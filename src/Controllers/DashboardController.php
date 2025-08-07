@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Controllers;
 
 class DashboardController
@@ -21,7 +20,10 @@ class DashboardController
             'expiring' => 0,
             'recent' => [],
             'expiring_details' => [],
-            'monthly_data' => $this->getMonthlyLicenseData()
+            'monthly_data' => $this->getMonthlyLicenseData(),
+            // New payment statistics
+            'payments' => $this->getPaymentStatistics(),
+            'monthly_revenue' => $this->getMonthlyRevenueData()
         ];
 
         try {
@@ -39,12 +41,11 @@ class DashboardController
 
             // Expiring soon (within next 7 days, including today)
             $stmt = $this->pdo->query("
-    SELECT COUNT(*) 
-    FROM projects_list 
-    WHERE valid_to BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-");
+                SELECT COUNT(*) 
+                FROM projects_list 
+                WHERE valid_to BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+            ");
             $stats['expiring'] = $stmt->fetchColumn();
-
 
             // Recent updates
             $stmt = $this->pdo->query("
@@ -56,49 +57,130 @@ class DashboardController
 
             // Expiring details for alerts
             $stmt = $this->pdo->query("
-    SELECT 
-        id,
-        name, 
-        license, 
-        valid_to, 
-        DATEDIFF(valid_to, CURDATE()) as days_remaining 
-    FROM projects_list 
-    WHERE valid_to BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-    ORDER BY valid_to ASC 
-    LIMIT 10
-");
-
+                SELECT 
+                    id,
+                    name, 
+                    license, 
+                    valid_to, 
+                    DATEDIFF(valid_to, CURDATE()) as days_remaining 
+                FROM projects_list 
+                WHERE valid_to BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+                ORDER BY valid_to ASC 
+                LIMIT 10
+            ");
             $stats['expiring_details'] = $stmt->fetchAll();
 
         } catch (\PDOException $e) {
             error_log("Database error in DashboardController: " . $e->getMessage());
             $_SESSION['error'] = "Error loading dashboard data";
-
-
             header('Location: ' . url('login'));
             exit;
         }
 
-        // Debug output for monthly data
+        // Debug output
         error_log("Monthly Data: " . print_r($stats['monthly_data'], true));
+        error_log("Payment Stats: " . print_r($stats['payments'], true));
+        error_log("Monthly Revenue: " . print_r($stats['monthly_revenue'], true));
 
         // Load view
         require __DIR__ . '/../../views/dashboard.php';
     }
 
-    private function getMonthlyLicenseData()
+    private function getPaymentStatistics()
+    {
+        $stats = [
+            'total_payments' => 0,
+            'total_revenue' => 0,
+            'this_month_revenue' => 0,
+            'this_month_payments' => 0,
+            'average_payment' => 0,
+            'top_paying_clients' => [],
+            'recent_payments' => []
+        ];
+
+        try {
+            // Total payments count
+            $stmt = $this->pdo->query("SELECT COUNT(*) FROM payments WHERE is_deleted = 0");
+            $stats['total_payments'] = $stmt->fetchColumn();
+
+            // Total revenue
+            $stmt = $this->pdo->query("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE is_deleted = 0");
+            $stats['total_revenue'] = (float) $stmt->fetchColumn();
+
+            // This month's revenue
+            $stmt = $this->pdo->query("
+                SELECT COALESCE(SUM(amount), 0) 
+                FROM payments 
+                WHERE is_deleted = 0 
+                AND MONTH(payment_date) = MONTH(CURDATE()) 
+                AND YEAR(payment_date) = YEAR(CURDATE())
+            ");
+            $stats['this_month_revenue'] = (float) $stmt->fetchColumn();
+
+            // This month's payment count
+            $stmt = $this->pdo->query("
+                SELECT COUNT(*) 
+                FROM payments 
+                WHERE is_deleted = 0 
+                AND MONTH(payment_date) = MONTH(CURDATE()) 
+                AND YEAR(payment_date) = YEAR(CURDATE())
+            ");
+            $stats['this_month_payments'] = $stmt->fetchColumn();
+
+            // Average payment amount
+            if ($stats['total_payments'] > 0) {
+                $stats['average_payment'] = $stats['total_revenue'] / $stats['total_payments'];
+            }
+
+            // Top paying clients (last 6 months)
+            $stmt = $this->pdo->query("
+                SELECT 
+                    pl.name as client_name,
+                    COALESCE(SUM(p.amount), 0) as total_paid,
+                    COUNT(p.id) as payment_count
+                FROM payments p
+                LEFT JOIN projects_list pl ON p.client_id = pl.id
+                WHERE p.is_deleted = 0 
+                AND p.payment_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+                GROUP BY p.client_id, pl.name
+                HAVING total_paid > 0
+                ORDER BY total_paid DESC
+                LIMIT 5
+            ");
+            $stats['top_paying_clients'] = $stmt->fetchAll();
+
+            // Recent payments
+            $stmt = $this->pdo->query("
+                SELECT 
+                    p.*,
+                    pl.name as client_name
+                FROM payments p
+                LEFT JOIN projects_list pl ON p.client_id = pl.id
+                WHERE p.is_deleted = 0
+                ORDER BY p.payment_date DESC, p.created_at DESC
+                LIMIT 5
+            ");
+            $stats['recent_payments'] = $stmt->fetchAll();
+
+        } catch (\PDOException $e) {
+            error_log("Error getting payment statistics: " . $e->getMessage());
+        }
+
+        return $stats;
+    }
+
+    private function getMonthlyRevenueData()
     {
         $data = [
             'labels' => [],
-            'new_licenses' => [],
-            'expired_licenses' => []
+            'revenue' => [],
+            'payment_count' => []
         ];
 
         try {
             // Get last 6 months including current month
             $currentMonth = (int) date('n');
             $currentYear = (int) date('Y');
-
             $months = [];
             $monthYearPairs = [];
 
@@ -115,7 +197,86 @@ class DashboardController
                     'month' => $month,
                     'year' => $year
                 ];
+                $months[] = date('M', mktime(0, 0, 0, $month, 1, $year));
+            }
 
+            $data['labels'] = $months;
+
+            // Monthly revenue query
+            $revenueQuery = "
+                SELECT 
+                    MONTH(payment_date) as month_num,
+                    YEAR(payment_date) as year_num,
+                    COALESCE(SUM(amount), 0) as total_revenue,
+                    COUNT(*) as payment_count
+                FROM payments 
+                WHERE is_deleted = 0 
+                AND payment_date >= DATE_SUB(
+                    DATE_FORMAT(NOW(), '%Y-%m-01'), 
+                    INTERVAL 5 MONTH
+                )
+                GROUP BY YEAR(payment_date), MONTH(payment_date)
+                ORDER BY YEAR(payment_date), MONTH(payment_date)
+            ";
+
+            $stmt = $this->pdo->query($revenueQuery);
+            $revenueData = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            // Initialize with zeros
+            $data['revenue'] = array_fill(0, 6, 0);
+            $data['payment_count'] = array_fill(0, 6, 0);
+
+            // Map query results
+            foreach ($revenueData as $row) {
+                $monthNum = (int) $row['month_num'];
+                $yearNum = (int) $row['year_num'];
+
+                foreach ($monthYearPairs as $index => $pair) {
+                    if ($pair['month'] == $monthNum && $pair['year'] == $yearNum) {
+                        $data['revenue'][$index] = (float) $row['total_revenue'];
+                        $data['payment_count'][$index] = (int) $row['payment_count'];
+                        break;
+                    }
+                }
+            }
+
+        } catch (\PDOException $e) {
+            error_log("Error getting monthly revenue data: " . $e->getMessage());
+            $data['revenue'] = array_fill(0, 6, 0);
+            $data['payment_count'] = array_fill(0, 6, 0);
+        }
+
+        return $data;
+    }
+
+    private function getMonthlyLicenseData()
+    {
+        $data = [
+            'labels' => [],
+            'new_licenses' => [],
+            'expired_licenses' => []
+        ];
+
+        try {
+            // Get last 6 months including current month
+            $currentMonth = (int) date('n');
+            $currentYear = (int) date('Y');
+            $months = [];
+            $monthYearPairs = [];
+
+            for ($i = 5; $i >= 0; $i--) {
+                $month = $currentMonth - $i;
+                $year = $currentYear;
+
+                if ($month < 1) {
+                    $month += 12;
+                    $year--;
+                }
+
+                $monthYearPairs[] = [
+                    'month' => $month,
+                    'year' => $year
+                ];
                 $months[] = date('M', mktime(0, 0, 0, $month, 1, $year));
             }
 
