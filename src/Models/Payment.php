@@ -1,7 +1,9 @@
 <?php
+
 namespace App\Models;
 
 use PDO;
+use PDOException; // Import PDOException class
 
 class Payment
 {
@@ -25,35 +27,44 @@ class Payment
      */
     public function create(array $data): bool
     {
+        error_log("Payment model create called with data: " . print_r($data, true));
+        // Reverted to original: Removed license_id from create, as client_id is used for linking to projects_list.id
         $sql = "INSERT INTO payments (client_id, amount, method, payment_date, note, created_at, is_deleted)
                 VALUES (:client_id, :amount, :method, :payment_date, :note, NOW(), 0)";
-
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute([
-            ':client_id' => $data['client_id'],
-            ':amount' => $data['amount'],
-            ':method' => $data['method'],
-            ':payment_date' => $data['payment_date'],
-            ':note' => $data['note'] ?? null
-        ]);
+        try {
+            $result = $stmt->execute([
+                ':client_id' => $data['client_id'],
+                ':amount' => $data['amount'],
+                ':method' => $data['method'],
+                ':payment_date' => $data['payment_date'],
+                ':note' => $data['note'] ?? null
+            ]);
+            if (!$result) {
+                error_log("PDOStatement errorInfo during create: " . print_r($stmt->errorInfo(), true));
+            }
+            return $result;
+        } catch (PDOException $e) {
+            error_log("PDOException during create: " . $e->getMessage());
+            return false;
+        }
     }
 
     public function searchClients(): void
     {
         $term = $_GET['term'] ?? '';
+        error_log("Payment model searchClients called with term: " . $term);
         // Use parameterized query with two placeholders
-        $sql = "SELECT id, name 
-            FROM projects_list 
-            WHERE name LIKE :term1 OR id LIKE :term2 
-            LIMIT 10";
-
+        $sql = "SELECT id, name
+                FROM projects_list
+                WHERE name LIKE :term1 OR id LIKE :term2
+                LIMIT 10";
         $stmt = $this->db->prepare($sql);
         // Bind parameters safely
         $stmt->execute([
             ':term1' => "%$term%",
             ':term2' => "%$term%"
         ]);
-
         $clients = $stmt->fetchAll(PDO::FETCH_ASSOC);
         header('Content-Type: application/json'); // Ensure JSON response
         echo json_encode($clients);
@@ -65,18 +76,18 @@ class Payment
      */
     public function getAll(): array
     {
-        $sql = "SELECT 
+        error_log("Payment model getAll called.");
+        $sql = "SELECT
                 payments.*,
-                projects_list.name as Client
-            FROM 
+                projects_list.name as client_name
+            FROM
                 payments
-           LEFT JOIN 
+            LEFT JOIN
                 projects_list ON payments.client_id = projects_list.id
-           WHERE 
-                payments.is_deleted = 0 
-            ORDER BY 
+            WHERE
+                payments.is_deleted = 0
+            ORDER BY
                 payments.created_at DESC";
-
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -86,11 +97,13 @@ class Payment
      */
     public function getDataTableData(int $start, int $length, string $search, string $clientFilter, array $order): array
     {
+        error_log("Payment model getDataTableData called. Start: {$start}, Length: {$length}, Search: '{$search}', Client Filter: '{$clientFilter}'");
+
         // Build base query
-        $baseQuery = "SELECT p.*, pl.name as client_name 
-                      FROM payments p 
-                      LEFT JOIN projects_list pl ON p.client_id = pl.id 
-                      WHERE p.is_deleted = 0";
+        $baseQuery = "SELECT p.*, pl.name as client_name
+                  FROM payments p
+                  LEFT JOIN projects_list pl ON p.client_id = pl.id
+                  WHERE p.is_deleted = 0";
 
         // Build WHERE conditions
         $whereConditions = [];
@@ -121,12 +134,14 @@ class Payment
         $totalRecordsQuery = "SELECT COUNT(*) FROM payments WHERE is_deleted = 0";
         $stmt = $this->db->query($totalRecordsQuery);
         $totalRecords = $stmt->fetchColumn();
+        error_log("Total records: " . $totalRecords);
 
         // Get filtered count
         $filteredQuery = "SELECT COUNT(*) FROM payments p LEFT JOIN projects_list pl ON p.client_id = pl.id WHERE p.is_deleted = 0" . $whereClause;
         $stmt = $this->db->prepare($filteredQuery);
         $stmt->execute($params);
         $filteredRecords = $stmt->fetchColumn();
+        error_log("Filtered records: " . $filteredRecords);
 
         // Ordering
         $orderColumn = $order[0]['column'] ?? 0;
@@ -156,13 +171,15 @@ class Payment
         }
         $query .= " LIMIT ?, ?";
 
-        $params[] = (int) $start;
-        $params[] = (int) $length;
+        $finalParams = array_merge($params, [(int) $start, (int) $length]);
+        error_log("Final SQL query: " . $query);
+        error_log("Final SQL params: " . print_r($finalParams, true));
 
         // Execute query
         $stmt = $this->db->prepare($query);
-        $stmt->execute($params);
+        $stmt->execute($finalParams);
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        error_log("Fetched data count: " . count($data));
 
         return [
             'totalRecords' => $totalRecords,
@@ -170,27 +187,27 @@ class Payment
             'data' => $data
         ];
     }
+
     public function getAllClients(): array
     {
+        error_log("Payment model getAllClients called.");
         $stmt = $this->db->query("SELECT id, name FROM projects_list ORDER BY name ASC");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
 
     /**
      * Get unique clients for filter dropdown
      */
     public function getClientsForFilter(): void
     {
-        $sql = "SELECT DISTINCT p.client_id, pl.name as client_name 
-                FROM payments p 
-                LEFT JOIN projects_list pl ON p.client_id = pl.id 
-                WHERE p.is_deleted = 0 AND pl.name IS NOT NULL 
+        error_log("Payment model getClientsForFilter called.");
+        $sql = "SELECT DISTINCT p.client_id, pl.name as client_name
+                FROM payments p
+                LEFT JOIN projects_list pl ON p.client_id = pl.id
+                WHERE p.is_deleted = 0 AND pl.name IS NOT NULL
                 ORDER BY pl.name";
-
         $stmt = $this->db->query($sql);
         $clients = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
         header('Content-Type: application/json');
         echo json_encode($clients);
         exit;
@@ -198,44 +215,71 @@ class Payment
 
     public function find(int $id): ?array
     {
+        error_log("Payment model find called for ID: " . $id);
         $sql = "SELECT * FROM payments WHERE id = :id AND is_deleted = 0";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $id]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        error_log("Find result for ID {$id}: " . ($result ? 'Found' : 'Not Found'));
         return $result ?: null;
     }
 
     public function update(int $id, array $data): bool
     {
-        $sql = "UPDATE payments 
-                SET client_id = :client_id, amount = :amount, method = :method, 
+        error_log("Payment model update called for ID: " . $id);
+        error_log("Data for update: " . print_r($data, true));
+
+        $sql = "UPDATE payments
+                SET client_id = :client_id, amount = :amount, method = :method,
                     payment_date = :payment_date, note = :note, updated_at = NOW()
                 WHERE id = :id AND is_deleted = 0";
-
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute([
-            ':client_id' => $data['client_id'],
-            ':amount' => $data['amount'],
-            ':method' => $data['method'],
-            ':payment_date' => $data['payment_date'],
-            ':note' => $data['note'] ?? null,
-            ':id' => $id
-        ]);
+
+        try {
+            $result = $stmt->execute([
+                ':client_id' => $data['client_id'],
+                ':amount' => $data['amount'],
+                ':method' => $data['method'],
+                ':payment_date' => $data['payment_date'],
+                ':note' => $data['note'] ?? null,
+                ':id' => $id
+            ]);
+
+            if (!$result) {
+                error_log("PDOStatement errorInfo during update: " . print_r($stmt->errorInfo(), true));
+            }
+            error_log("SQL execution result for update ID {$id}: " . ($result ? 'SUCCESS' : 'FAIL'));
+            return $result;
+        } catch (PDOException $e) {
+            error_log("PDOException during update for ID {$id}: " . $e->getMessage());
+            return false;
+        }
     }
 
     public function deletePayment($id): bool
     {
+        error_log("Payment model deletePayment called for ID: " . $id);
         $sql = "UPDATE payments SET is_deleted = 1 WHERE id = :id";
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute([':id' => $id]);
+        try {
+            $result = $stmt->execute([':id' => $id]);
+            if (!$result) {
+                error_log("PDOStatement errorInfo during delete: " . print_r($stmt->errorInfo(), true));
+            }
+            error_log("SQL execution result for delete ID {$id}: " . ($result ? 'SUCCESS' : 'FAIL'));
+            return $result;
+        } catch (PDOException $e) {
+            error_log("PDOException during delete: " . $e->getMessage());
+            return false;
+        }
     }
 
     public function getAvailableClient(): void
     {
-        $sql = "SELECT id, name 
-            FROM projects_list 
-            ORDER BY name ASC";
-
+        error_log("Payment model getAvailableClient called.");
+        $sql = "SELECT id, name
+                FROM projects_list
+                ORDER BY name ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         $clients = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -243,14 +287,14 @@ class Payment
         exit;
     }
 
-
     public function validateClient(int $clientId): array
     {
+        error_log("Payment model validateClient called for client ID: " . $clientId);
         $sql = "SELECT id, name FROM projects_list WHERE id = :client_id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':client_id' => $clientId]);
         $client = $stmt->fetch(PDO::FETCH_ASSOC);
-
+        error_log("Validate client result for ID {$clientId}: " . ($client ? 'Valid' : 'Invalid'));
         return $client
             ? ['valid' => true, 'client_name' => $client['name']]
             : ['valid' => false];

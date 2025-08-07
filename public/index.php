@@ -34,10 +34,10 @@ try {
     );
     // Test connection
     $pdo->query("SELECT 1")->fetchColumn();
-
     // Make PDO globally available
     $GLOBALS['pdo'] = $pdo;
 } catch (PDOException $e) {
+    error_log("Database connection failed: " . $e->getMessage()); // Log DB connection errors
     die("Database connection failed: " . $e->getMessage());
 }
 
@@ -78,7 +78,6 @@ switch ($request) {
         require __DIR__ . '/../src/Controllers/AuthController.php';
         (new App\Controllers\AuthController($pdo))->showLogin();
         break;
-
     case '/login/submit':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
@@ -88,19 +87,16 @@ switch ($request) {
         require __DIR__ . '/../src/Controllers/AuthController.php';
         (new App\Controllers\AuthController($pdo))->handleLogin();
         break;
-
     case '/dashboard':
         requireAuth();
         require __DIR__ . '/../src/Controllers/DashboardController.php';
         (new App\Controllers\DashboardController($pdo))->index();
         break;
-
     case '/activation-codes':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
         (new App\Controllers\ActivationCodeController($pdo))->index();
         break;
-
     case '/activation-codes/create':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
@@ -111,13 +107,11 @@ switch ($request) {
             $controller->store();
         }
         break;
-
     case '/export':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
         (new App\Controllers\ActivationCodeController($pdo))->export();
         break;
-
     case '/activation-codes/edit':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
@@ -128,31 +122,26 @@ switch ($request) {
             $controller->update($_GET['id'] ?? null);
         }
         break;
-
     case '/activation-codes/delete':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
         (new App\Controllers\ActivationCodeController($pdo))->delete($_GET['id'] ?? null);
         break;
-
     case '/activation-codes/datatable':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
         (new App\Controllers\ActivationCodeController($pdo))->datatable();
         break;
-
     case '/activation-codes/bulk-update':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
         (new App\Controllers\ActivationCodeController($pdo))->bulkUpdate();
         break;
-
     case '/activation-codes/bulk-delete':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
         (new App\Controllers\ActivationCodeController($pdo))->bulkDelete();
         break;
-
     case '/logout':
         require __DIR__ . '/../src/Controllers/AuthController.php';
         (new App\Controllers\AuthController($pdo))->logout();
@@ -164,7 +153,6 @@ switch ($request) {
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->index();
         break;
-
     case '/payments-manager/create':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
@@ -175,19 +163,16 @@ switch ($request) {
             $controller->create($_POST);
         }
         break;
-
     case '/payments-manager/datatable':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->datatable();
         break;
-
     case '/payments-manager/get-clients':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->getClients();
         break;
-
     case '/payments-manager/edit':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
@@ -196,7 +181,6 @@ switch ($request) {
             $controller->edit(); // This method will load the view
         }
         break;
-
     case '/payments-manager/update':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
@@ -208,7 +192,6 @@ switch ($request) {
         }
         (new App\Controllers\PaymentsController($pdo))->update((int) $id);
         break;
-
     case '/payments-manager/delete':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
@@ -220,30 +203,43 @@ switch ($request) {
         }
         (new App\Controllers\PaymentsController($pdo))->delete((int) $id);
         break;
-
     // Additional payment routes for your existing methods
     case '/payments-manager/available-clients':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->getAvailableClients();
         break;
-
     case '/payments-manager/validate-client':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->validateClient();
         break;
-
     case '/payments-manager/search-clients':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->searchClients();
         break;
-
     case '/payments-manager/get-payment':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->getPayment();
+        break;
+
+    // New: Routes for creating payment for a license
+    case '/payments-manager/create-payment-for-license-form':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
+        (new App\Controllers\PaymentsController($pdo))->createPaymentForLicenseForm();
+        break;
+    case '/payments-manager/create-payment-for-license':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/PaymentsController.php';
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            (new App\Controllers\PaymentsController($pdo))->createPaymentForLicense($_POST);
+        } else {
+            http_response_code(405);
+            echo "Method Not Allowed";
+        }
         break;
 
     default:
