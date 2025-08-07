@@ -116,9 +116,9 @@ if (isset($_SESSION['errors'])): ?>
                     </div>
 
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="<?= BASE_URL ?>/activation-codes" class="btn btn-secondary">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="closev">
                             <i class="fas fa-times"></i> Cancel
-                        </a>
+                        </button>
 
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Create License
