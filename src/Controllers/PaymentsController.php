@@ -301,9 +301,6 @@ class PaymentsController
         // Pass license_id (which is projects_list.id) and license_name to the view
         $licenseId = $_GET['license_id'] ?? null;
         $licenseName = $_GET['license_name'] ?? 'N/A';
-
-        // These variables will be available in the required view
-        // For the client dropdown, we need all available clients
         $availableClients = $this->paymentModel->getAllClients(); // Assuming this method exists and returns all clients
 
         require __DIR__ . '/../../views/payments_manager/create_payment_for_license.php';
