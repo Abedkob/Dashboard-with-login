@@ -41,10 +41,10 @@ class LogsController
             ];
 
             $baseQuery = "SELECT 
-                activity_logs.*,
-                users.username AS user_name
-                FROM activity_logs
-                LEFT JOIN users ON activity_logs.user_id = users.user_id";
+            activity_logs.*,
+            users.username AS user_name
+            FROM activity_logs
+            LEFT JOIN users ON activity_logs.user_id = users.user_id";
 
             $whereConditions = [];
             $params = [];
@@ -52,11 +52,11 @@ class LogsController
             // Search filter
             if (!empty($search)) {
                 $whereConditions[] = "(
-                    activity_logs.action LIKE ? OR 
-                    activity_logs.description LIKE ? OR 
-                    activity_logs.ip_address LIKE ? OR
-                    users.username LIKE ?
-                )";
+                activity_logs.action LIKE ? OR 
+                activity_logs.description LIKE ? OR 
+                activity_logs.ip_address LIKE ? OR
+                users.username LIKE ?
+            )";
                 $searchTerm = "%$search%";
                 $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
             }
@@ -69,6 +69,12 @@ class LogsController
             if (!empty($_POST['date_to'])) {
                 $whereConditions[] = "activity_logs.created_at <= ?";
                 $params[] = $_POST['date_to'] . ' 23:59:59';
+            }
+
+            // **Add action filter here**
+            if (!empty($_POST['action_filter'])) {
+                $whereConditions[] = "activity_logs.action = ?";
+                $params[] = $_POST['action_filter'];
             }
 
             $whereClause = '';
@@ -149,4 +155,46 @@ class LogsController
             exit;
         }
     }
+
+    public function getActions(): void
+    {
+        // The list of actions you want to show (static, as per your description)
+        $actions = [
+            'logged in',
+            'Logout',
+            'Update Payment',
+            'UPDATE_LICENSE',
+            'DELETE_LICENSE',
+            'Delete Payment',
+            'CREATE_LICENSE',
+            'Create Payment'
+        ];
+
+        header('Content-Type: application/json');
+        echo json_encode($actions);
+        exit;
+    }
+
+
+    // New method to get descriptions (sample simple query)
+    public function getDescription(): void
+    {
+        try {
+            $stmt = $this->pdo->query("SELECT id, user_id, action, description, ip_address, created_at FROM activity_logs ORDER BY created_at DESC LIMIT 100");
+            $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            header('Content-Type: application/json');
+            echo json_encode($logs);
+            exit;
+        } catch (Exception $e) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'error' => 'Failed to fetch descriptions',
+                'message' => $e->getMessage()
+            ]);
+            exit;
+        }
+    }
 }
+
+

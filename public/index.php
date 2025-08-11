@@ -252,6 +252,19 @@ switch ($request) {
         require __DIR__ . '/../src/Controllers/LogsController.php';
         (new App\Controllers\LogsController($pdo))->datatable();
         break;
+    case '/logs/get-actions':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/LogsController.php';
+        (new App\Controllers\LogsController($pdo))->getActions();
+        break;
+
+
+    case '/logs/get-description':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/LogsController.php';
+        (new App\Controllers\LogsController($pdo))->getDescription();
+        break;
+
     case '/2fa':
         require __DIR__ . '/../src/Controllers/AuthController.php';
         (new App\Controllers\AuthController($pdo))->show2FA();
