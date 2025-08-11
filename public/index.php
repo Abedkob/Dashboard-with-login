@@ -1,7 +1,7 @@
 <?php
 // index.php - Front Controller
 session_start();
-
+require_once __DIR__ . '/../vendor/autoload.php';
 // Enable error reporting & logging (disable display in production)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -43,8 +43,10 @@ try {
 
 function isAuthenticated()
 {
-    return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+    return isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])
+        && isset($_SESSION['2fa_verified']) && $_SESSION['2fa_verified'] === true;
 }
+
 
 function requireAuth()
 {
@@ -250,6 +252,22 @@ switch ($request) {
         require __DIR__ . '/../src/Controllers/LogsController.php';
         (new App\Controllers\LogsController($pdo))->datatable();
         break;
+    case '/2fa':
+        require __DIR__ . '/../src/Controllers/AuthController.php';
+        (new App\Controllers\AuthController($pdo))->show2FA();
+        break;
+
+    case '/2fa/verify':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo "Method Not Allowed";
+            exit;
+        }
+        require __DIR__ . '/../src/Controllers/AuthController.php';
+        (new App\Controllers\AuthController($pdo))->verify2FA();
+        break;
+
+
 
     default:
         http_response_code(404);

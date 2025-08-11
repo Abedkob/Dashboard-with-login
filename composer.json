@@ -1,0 +1,13 @@
+{
+    "name": "lenovo/practice_php",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Lenovo\\PracticePhp\\": "src/"
+        }
+    },
+    "require": {
+        "phpgangsta/googleauthenticator": "dev-master"
+    }
+}
