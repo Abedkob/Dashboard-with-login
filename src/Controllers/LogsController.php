@@ -180,21 +180,37 @@ class LogsController
     public function getDescription(): void
     {
         try {
-            $stmt = $this->pdo->query("SELECT id, user_id, action, description, ip_address, created_at FROM activity_logs ORDER BY created_at DESC LIMIT 100");
-            $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            // Check if 'id' is sent via POST
+            if (empty($_POST['id'])) {
+                throw new Exception('Log ID is required');
+            }
+
+            $logId = intval($_POST['id']);
+
+            // Prepare and execute the query to get description of this log only
+            $stmt = $this->pdo->prepare("SELECT description FROM activity_logs WHERE id = ?");
+            $stmt->execute([$logId]);
+
+            $log = $stmt->fetch(PDO::FETCH_ASSOC);
 
             header('Content-Type: application/json');
-            echo json_encode($logs);
+
+            if ($log && isset($log['description'])) {
+                echo json_encode(['description' => $log['description']]);
+            } else {
+                echo json_encode(['description' => 'No description available']);
+            }
             exit;
         } catch (Exception $e) {
             header('Content-Type: application/json');
             echo json_encode([
-                'error' => 'Failed to fetch descriptions',
+                'error' => 'Failed to fetch description',
                 'message' => $e->getMessage()
             ]);
             exit;
         }
     }
+
 }
 
 
