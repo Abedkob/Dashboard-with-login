@@ -136,10 +136,18 @@ $isLoginPage = (basename($_SERVER['PHP_SELF']) == 'login.php' || strpos($_SERVER
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'logs') !== false ? 'active' : '' ?>"
+                                    href="/Practice_php/public/logs">
+                                    <i class="fas fa-history"></i> Activity Logs
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" href="/Practice_php/public/logout">
                                     <i class="fas fa-sign-out-alt"></i> Logout
                                 </a>
                             </li>
+
+
 
                         </ul>
                     </div>

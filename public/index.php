@@ -41,7 +41,6 @@ try {
     die("Database connection failed: " . $e->getMessage());
 }
 
-// Authentication helper
 function isAuthenticated()
 {
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
@@ -240,6 +239,16 @@ switch ($request) {
             http_response_code(405);
             echo "Method Not Allowed";
         }
+        break;
+    case '/logs':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/LogsController.php';
+        (new App\Controllers\LogsController($pdo))->index();
+        break;
+    case '/logs/datatable':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/LogsController.php';
+        (new App\Controllers\LogsController($pdo))->datatable();
         break;
 
     default:

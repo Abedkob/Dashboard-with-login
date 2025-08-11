@@ -148,15 +148,22 @@ class ActivationCodeController
         if (empty($errors)) {
             try {
                 $stmt = $this->pdo->prepare("
-                INSERT INTO projects_list 
-                (name, license, valid_from, valid_to, created_at, updated_at)
-                VALUES (?, ?, ?, ?, NOW(), NOW())
-            ");
+            INSERT INTO projects_list 
+            (name, license, valid_from, valid_to, created_at, updated_at)
+            VALUES (?, ?, ?, ?, NOW(), NOW())
+        ");
                 $stmt->execute([$fullName, $license, $validFrom, $validTo]);
+
+                $newId = $this->pdo->lastInsertId();
+                $this->logActivity('create', $newId, [
+                    'name' => $fullName,
+                    'license' => $license,
+                    'valid_from' => $validFrom,
+                    'valid_to' => $validTo
+                ]);
 
                 echo json_encode(['success' => true]);
                 exit;
-
             } catch (\PDOException $e) {
                 echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
                 exit;
@@ -227,10 +234,10 @@ class ActivationCodeController
         if (empty($errors)) {
             try {
                 $stmt = $this->pdo->prepare("
-                    UPDATE projects_list 
-                    SET name = ?, license = ?, valid_from = ?, valid_to = ?, updated_at = NOW()
-                    WHERE id = ?
-                ");
+            UPDATE projects_list 
+            SET name = ?, license = ?, valid_from = ?, valid_to = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
                 $stmt->execute([
                     $fullName,
                     $license,
@@ -239,10 +246,16 @@ class ActivationCodeController
                     $id
                 ]);
 
+                $this->logActivity('update', $id, [
+                    'name' => $fullName,
+                    'license' => $license,
+                    'valid_from' => $validFrom,
+                    'valid_to' => $validTo
+                ]);
+
                 $_SESSION['success'] = 'License updated successfully';
                 header('Location: ' . url('activation-codes'));
                 exit;
-
             } catch (\PDOException $e) {
                 $errors[] = 'Database error: ' . $e->getMessage();
             }
@@ -257,7 +270,6 @@ class ActivationCodeController
     public function delete($id)
     {
         try {
-            // Check if license exists
             $stmt = $this->pdo->prepare("SELECT name FROM projects_list WHERE id = ?");
             $stmt->execute([$id]);
             $license = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -268,9 +280,10 @@ class ActivationCodeController
                 exit;
             }
 
-            // Delete the license
             $stmt = $this->pdo->prepare("DELETE FROM projects_list WHERE id = ?");
             $stmt->execute([$id]);
+
+            $this->logActivity('delete', $id, ['name' => $license['name']]);
 
             $_SESSION['success'] = "License for {$license['name']} deleted successfully";
         } catch (\PDOException $e) {
@@ -774,5 +787,78 @@ class ActivationCodeController
             ]);
         }
         exit;
+    }
+    private function logActivity(string $actionType, ?int $licenseId = null, array $requestData = []): bool
+    {
+        if (!$this->isAuthenticated()) {
+            error_log("Cannot log activity - user not authenticated");
+            return false;
+        }
+
+        $userId = $_SESSION['user_id'];
+        $ipAddress = $this->getClientIp();
+
+        // Determine action and description based on type
+        switch ($actionType) {
+            case 'create':
+                $action = 'CREATE_LICENSE';
+                $description = 'Created a new license';
+                break;
+            case 'update':
+                $action = 'UPDATE_LICENSE';
+                $description = 'Updated a license';
+                break;
+            case 'delete':
+                $action = 'DELETE_LICENSE';
+                $description = 'Deleted a license';
+                break;
+            case 'export':
+                $action = 'EXPORT_LICENSES';
+                $description = 'Exported license data';
+                break;
+            default:
+                $action = 'UNKNOWN_ACTION';
+                $description = 'Performed an action';
+        }
+
+        // Add license info if available
+        if ($licenseId) {
+            $description .= " (ID: {$licenseId})";
+        }
+
+        // Add request data details
+        if (!empty($requestData)) {
+            $dataSummary = json_encode($requestData);
+            $description .= " | Data: " . substr($dataSummary, 0, 200); // Limit to 200 chars
+        }
+
+        try {
+            $stmt = $this->pdo->prepare("
+            INSERT INTO activity_logs 
+            (user_id, action, description, ip_address) 
+            VALUES 
+            (?, ?, ?, ?)
+        ");
+            return $stmt->execute([$userId, $action, $description, $ipAddress]);
+        } catch (\PDOException $e) {
+            error_log("Failed to log activity: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function getClientIp(): string
+    {
+        $ip = $_SERVER['REMOTE_ADDR'];
+        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+            $ip = $_SERVER['HTTP_CLIENT_IP'];
+        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ip = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
+        }
+        return $ip;
+    }
+
+    private function isAuthenticated(): bool
+    {
+        return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
     }
 }

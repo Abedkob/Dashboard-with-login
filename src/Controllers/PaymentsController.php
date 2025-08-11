@@ -38,6 +38,7 @@ class PaymentsController
             $success = $this->paymentModel->create($requestData);
             if ($success) {
                 error_log("Payment created successfully.");
+                $this->logActivity('create', $requestData['license_id'] ?? null, $requestData);
                 echo json_encode(['message' => 'Payment created successfully']);
             } else {
                 error_log("Failed to create payment in model.");
@@ -164,6 +165,7 @@ class PaymentsController
             $success = $this->paymentModel->update($id, $requestData);
             if ($success) {
                 error_log("Payment ID {$id} updated successfully.");
+                $this->logActivity('update', $id, $requestData);
                 echo json_encode(['message' => 'Payment updated successfully']);
             } else {
                 error_log("Failed to update payment ID {$id} in model.");
@@ -197,6 +199,7 @@ class PaymentsController
             $success = $this->paymentModel->deletePayment($id);
             if ($success) {
                 error_log("Payment ID {$id} deleted successfully.");
+                $this->logActivity('delete', $id);
                 echo json_encode(['message' => 'Payment deleted successfully']);
             } else {
                 error_log("Failed to delete payment ID {$id} in model.");
@@ -295,15 +298,46 @@ class PaymentsController
     public function createPaymentForLicenseForm(): void
     {
         error_log("PaymentsController::createPaymentForLicenseForm called.");
-        // Make PDO available globally for the view
-        $GLOBALS['pdo'] = $this->paymentModel->getDb();
 
-        // Pass license_id (which is projects_list.id) and license_name to the view
+        // Validate license_id exists
         $licenseId = $_GET['license_id'] ?? null;
-        $licenseName = $_GET['license_name'] ?? 'N/A';
-        $availableClients = $this->paymentModel->getAllClients(); // Assuming this method exists and returns all clients
+        if (!$licenseId) {
+            error_log("Error: Missing license_id parameter");
+            header('Location: /payments'); // Redirect if no license_id
+            exit;
+        }
 
-        require __DIR__ . '/../../views/payments_manager/create_payment_for_license.php';
+        // Get license details for validation
+        try {
+            $stmt = $this->paymentModel->getDb()->prepare("
+            SELECT id, name FROM projects_list WHERE id = ?
+        ");
+            $stmt->execute([$licenseId]);
+            $license = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$license) {
+                error_log("Error: Invalid license_id: {$licenseId}");
+                header('Location: /payments'); // Redirect if invalid license
+                exit;
+            }
+
+            // Make data available to view
+            $GLOBALS['pdo'] = $this->paymentModel->getDb();
+            $licenseName = $license['name'] ?? 'N/A';
+            $availableClients = $this->paymentModel->getAllClients();
+
+            // Log the form access
+            $this->logActivity('view_payment_form', $licenseId, [
+                'license_name' => $licenseName
+            ]);
+
+            require __DIR__ . '/../../views/payments_manager/create_payment_for_license.php';
+
+        } catch (\PDOException $e) {
+            error_log("Database error in createPaymentForLicenseForm: " . $e->getMessage());
+            header('Location: /payments?error=db_error');
+            exit;
+        }
     }
 
     // New: Method to handle creation of payment for a license
@@ -343,4 +377,71 @@ class PaymentsController
             echo json_encode(['error' => 'Server error: ' . $e->getMessage()]);
         }
     }
+
+    private function logActivity($actionType, $licenseId = null, $requestData = []): void
+    {
+
+        // Sanitize action type
+        $actionMap = [
+            'create' => 'Create Payment',
+            'update' => 'Update Payment',
+            'delete' => 'Delete Payment',
+            'view_payment_form' => 'View Payment Form',
+            'create_license_payment' => 'Create License Payment',
+            1 => 'Create Payment',
+            2 => 'Update Payment',
+            3 => 'Delete Payment'
+        ];
+
+        $action = $actionMap[strtolower($actionType)] ?? 'Unknown Action';
+
+        // Get client IP safely
+        $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+        foreach (['HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR'] as $key) {
+            if (!empty($_SERVER[$key])) {
+                $ipAddress = is_array($_SERVER[$key])
+                    ? $_SERVER[$key][0]
+                    : explode(',', $_SERVER[$key])[0];
+                break;
+            }
+        }
+
+        // Build description safely
+        $descriptionParts = [];
+        if ($licenseId !== null) {
+            $descriptionParts[] = "License ID: " . htmlspecialchars($licenseId, ENT_QUOTES);
+        }
+
+        if (!empty($requestData)) {
+            $sanitizedData = array_map(function ($value) {
+                return is_scalar($value) ? htmlspecialchars($value, ENT_QUOTES) : '[complex data]';
+            }, $requestData);
+            $descriptionParts[] = "Data: " . substr(json_encode($sanitizedData), 0, 500);
+        }
+
+        $description = implode(' | ', $descriptionParts) ?: 'No additional info';
+
+        try {
+            $stmt = $this->paymentModel->getDb()->prepare("
+            INSERT INTO activity_logs 
+            (user_id, action, description, ip_address, created_at)
+            VALUES 
+            (:user_id, :action, :description, :ip_address, NOW())
+        ");
+
+            $stmt->execute([
+                ':user_id' => $_SESSION['user_id'],
+                ':action' => $action,
+                ':description' => $description,
+                ':ip_address' => $ipAddress
+            ]);
+
+            error_log("Activity logged: {$action} for license {$licenseId}");
+
+        } catch (\Exception $e) {
+            error_log("Failed to log activity: " . $e->getMessage());
+            // Consider adding error handling or notification here
+        }
+    }
+
 }

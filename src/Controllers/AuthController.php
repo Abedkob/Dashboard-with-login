@@ -9,9 +9,11 @@ use PDO;
 class AuthController
 {
     private $userModel;
+    private $db;
 
     public function __construct(PDO $db)
     {
+        $this->db = $db;
         $this->userModel = new User($db);
         $this->startSession();
     }
@@ -63,8 +65,6 @@ class AuthController
             exit;
         }
 
-        error_log("POST data: " . print_r($_POST, true));
-
         $username = trim($_POST['username'] ?? '');
         $password = trim($_POST['password'] ?? '');
 
@@ -96,19 +96,31 @@ class AuthController
         $_SESSION['user_id'] = $user->user_id;
         $_SESSION['user_level'] = $user->level;
 
+        // Log into activity_logs table
+        $ipAddress = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+        $description = "User {$username} has successfully logged in.";
+
+        $stmt = $this->db->prepare("
+            INSERT INTO activity_logs (user_id, action, description, ip_address)
+            VALUES (:user_id, :action, :description, :ip_address)
+        ");
+        $stmt->execute([
+            ':user_id' => $user->user_id,
+            ':action' => 'logged in',
+            ':description' => $description,
+            ':ip_address' => $ipAddress
+        ]);
+
         header('Location: ' . url('dashboard'));
         exit;
     }
 
     public function logout()
     {
-        // Start session if not already started
         $this->startSession();
 
-        // Unset all session variables
-        $_SESSION = array();
+        $_SESSION = [];
 
-        // Delete the session cookie
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
             setcookie(
@@ -122,10 +134,8 @@ class AuthController
             );
         }
 
-        // Destroy the session
         session_destroy();
 
-        // Redirect to login page
         header('Location: ' . url('login'));
         exit;
     }
