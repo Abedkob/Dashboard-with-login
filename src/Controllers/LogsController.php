@@ -161,7 +161,7 @@ class LogsController
         // The list of actions you want to show (static, as per your description)
         $actions = [
             'logged in',
-            'Logout',
+            'logged out',
             'Update Payment',
             'UPDATE_LICENSE',
             'DELETE_LICENSE',

@@ -184,6 +184,28 @@ class AuthController
     {
         $this->startSession();
 
+        // Capture user ID before clearing session
+        $userId = $_SESSION['user_id'] ?? null;
+
+        // Get IP address (respecting proxies)
+        $ipAddress = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+
+        if ($userId) {
+            // Log logout action
+            $description = "User ID {$userId} logged out.";
+
+            $stmt = $this->db->prepare("
+            INSERT INTO activity_logs (user_id, action, description, ip_address)
+            VALUES (:user_id, 'logged out', :description, :ip_address)
+        ");
+            $stmt->execute([
+                ':user_id' => $userId,
+                ':description' => $description,
+                ':ip_address' => $ipAddress
+            ]);
+        }
+
+        // Clear session data
         $_SESSION = [];
 
         if (ini_get("session.use_cookies")) {
@@ -199,12 +221,11 @@ class AuthController
             );
         }
 
-        $_SESSION['user_id'] = null;
-        $_SESSION['2fa_verified'] = null;
         session_destroy();
-
 
         header('Location: ' . url('login'));
         exit;
     }
+
+
 }
