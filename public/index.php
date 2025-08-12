@@ -1,7 +1,7 @@
 <?php
-// index.php - Front Controller
 session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
+
 // Enable error reporting & logging (disable display in production)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -9,8 +9,8 @@ ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/../log/php-error.log');
 error_reporting(E_ALL);
 
-// Detect Base Path dynamically
-$basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
+// Set your fixed base path here:
+$basePath = '/Practice_php/public';
 
 // URL helper function
 function url($path = '')
@@ -32,12 +32,10 @@ try {
             PDO::ATTR_EMULATE_PREPARES => false,
         ]
     );
-    // Test connection
     $pdo->query("SELECT 1")->fetchColumn();
-    // Make PDO globally available
     $GLOBALS['pdo'] = $pdo;
 } catch (PDOException $e) {
-    error_log("Database connection failed: " . $e->getMessage()); // Log DB connection errors
+    error_log("Database connection failed: " . $e->getMessage());
     die("Database connection failed: " . $e->getMessage());
 }
 
@@ -47,7 +45,6 @@ function isAuthenticated()
         && isset($_SESSION['2fa_verified']) && $_SESSION['2fa_verified'] === true;
 }
 
-
 function requireAuth()
 {
     if (!isAuthenticated()) {
@@ -56,22 +53,17 @@ function requireAuth()
     }
 }
 
-// Parse request URI
+// Get the requested URI path
 $request = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// Remove base path from request
-if (strpos($request, $basePath) === 0) {
-    $request = substr($request, strlen($basePath));
-}
-$request = '/' . trim($request, '/');
+// Remove any trailing slash for consistent matching
+$request = rtrim($request, '/');
 
-// Debug log
-error_log("Routing request: " . $request);
-
-// Routing
+// Routing with full basePath prefix
 switch ($request) {
-    case '/':
-    case '/login':
+    case $basePath:
+    case $basePath . '/':
+    case $basePath . '/login':
         if (isAuthenticated()) {
             header('Location: ' . url('dashboard'));
             exit;
@@ -79,7 +71,8 @@ switch ($request) {
         require __DIR__ . '/../src/Controllers/AuthController.php';
         (new App\Controllers\AuthController($pdo))->showLogin();
         break;
-    case '/login/submit':
+
+    case $basePath . '/login/submit':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo "Method Not Allowed";
@@ -88,17 +81,20 @@ switch ($request) {
         require __DIR__ . '/../src/Controllers/AuthController.php';
         (new App\Controllers\AuthController($pdo))->handleLogin();
         break;
-    case '/dashboard':
+
+    case $basePath . '/dashboard':
         requireAuth();
         require __DIR__ . '/../src/Controllers/DashboardController.php';
         (new App\Controllers\DashboardController($pdo))->index();
         break;
-    case '/activation-codes':
+
+    case $basePath . '/activation-codes':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
         (new App\Controllers\ActivationCodeController($pdo))->index();
         break;
-    case '/activation-codes/create':
+
+    case $basePath . '/activation-codes/create':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
         $controller = new App\Controllers\ActivationCodeController($pdo);
@@ -108,12 +104,14 @@ switch ($request) {
             $controller->store();
         }
         break;
-    case '/export':
+
+    case $basePath . '/export':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
         (new App\Controllers\ActivationCodeController($pdo))->export();
         break;
-    case '/activation-codes/edit':
+
+    case $basePath . '/activation-codes/edit':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
         $controller = new App\Controllers\ActivationCodeController($pdo);
@@ -123,66 +121,76 @@ switch ($request) {
             $controller->update($_GET['id'] ?? null);
         }
         break;
-    case '/activation-codes/delete':
+
+    case $basePath . '/activation-codes/delete':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
         (new App\Controllers\ActivationCodeController($pdo))->delete($_GET['id'] ?? null);
         break;
-    case '/activation-codes/datatable':
+
+    case $basePath . '/activation-codes/datatable':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
         (new App\Controllers\ActivationCodeController($pdo))->datatable();
         break;
-    case '/activation-codes/bulk-update':
+
+    case $basePath . '/activation-codes/bulk-update':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
         (new App\Controllers\ActivationCodeController($pdo))->bulkUpdate();
         break;
-    case '/activation-codes/bulk-delete':
+
+    case $basePath . '/activation-codes/bulk-delete':
         requireAuth();
         require __DIR__ . '/../src/Controllers/ActivationCodeController.php';
         (new App\Controllers\ActivationCodeController($pdo))->bulkDelete();
         break;
-    case '/logout':
+
+    case $basePath . '/logout':
         require __DIR__ . '/../src/Controllers/AuthController.php';
         (new App\Controllers\AuthController($pdo))->logout();
         break;
 
-    // ===== PAYMENTS MANAGER ROUTES =====
-    case '/payments-manager':
+    // Payments Manager Routes
+    case $basePath . '/payments-manager':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->index();
         break;
-    case '/payments-manager/create':
+
+    case $basePath . '/payments-manager/create':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         $controller = new App\Controllers\PaymentsController($pdo);
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            $controller->createForm(); // This should load your form
+            $controller->createForm();
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $controller->create($_POST);
         }
         break;
-    case '/payments-manager/datatable':
+
+    case $basePath . '/payments-manager/datatable':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->datatable();
         break;
-    case '/payments-manager/get-clients':
+
+    case $basePath . '/payments-manager/get-clients':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->getClients();
         break;
-    case '/payments-manager/edit':
+
+    case $basePath . '/payments-manager/edit':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         $controller = new App\Controllers\PaymentsController($pdo);
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            $controller->edit(); // This method will load the view
+            $controller->edit();
         }
         break;
-    case '/payments-manager/update':
+
+    case $basePath . '/payments-manager/update':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         $id = $_GET['id'] ?? null;
@@ -193,7 +201,8 @@ switch ($request) {
         }
         (new App\Controllers\PaymentsController($pdo))->update((int) $id);
         break;
-    case '/payments-manager/delete':
+
+    case $basePath . '/payments-manager/delete':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         $id = $_POST['id'] ?? null;
@@ -204,35 +213,38 @@ switch ($request) {
         }
         (new App\Controllers\PaymentsController($pdo))->delete((int) $id);
         break;
-    // Additional payment routes for your existing methods
-    case '/payments-manager/available-clients':
+
+    case $basePath . '/payments-manager/available-clients':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->getAvailableClients();
         break;
-    case '/payments-manager/validate-client':
+
+    case $basePath . '/payments-manager/validate-client':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->validateClient();
         break;
-    case '/payments-manager/search-clients':
+
+    case $basePath . '/payments-manager/search-clients':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->searchClients();
         break;
-    case '/payments-manager/get-payment':
+
+    case $basePath . '/payments-manager/get-payment':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->getPayment();
         break;
 
-    // New: Routes for creating payment for a license
-    case '/payments-manager/create-payment-for-license-form':
+    case $basePath . '/payments-manager/create-payment-for-license-form':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         (new App\Controllers\PaymentsController($pdo))->createPaymentForLicenseForm();
         break;
-    case '/payments-manager/create-payment-for-license':
+
+    case $basePath . '/payments-manager/create-payment-for-license':
         requireAuth();
         require __DIR__ . '/../src/Controllers/PaymentsController.php';
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -242,35 +254,39 @@ switch ($request) {
             echo "Method Not Allowed";
         }
         break;
-    case '/logs':
+
+    // Logs Routes
+    case $basePath . '/logs':
         requireAuth();
         require __DIR__ . '/../src/Controllers/LogsController.php';
         (new App\Controllers\LogsController($pdo))->index();
         break;
-    case '/logs/datatable':
+
+    case $basePath . '/logs/datatable':
         requireAuth();
         require __DIR__ . '/../src/Controllers/LogsController.php';
         (new App\Controllers\LogsController($pdo))->datatable();
         break;
-    case '/logs/get-actions':
+
+    case $basePath . '/logs/get-actions':
         requireAuth();
         require __DIR__ . '/../src/Controllers/LogsController.php';
         (new App\Controllers\LogsController($pdo))->getActions();
         break;
 
-
-    case '/logs/get-description':
+    case $basePath . '/logs/get-description':
         requireAuth();
         require __DIR__ . '/../src/Controllers/LogsController.php';
         (new App\Controllers\LogsController($pdo))->getDescription();
         break;
 
-    case '/2fa':
+    // Two Factor Authentication Routes
+    case $basePath . '/2fa':
         require __DIR__ . '/../src/Controllers/AuthController.php';
         (new App\Controllers\AuthController($pdo))->show2FA();
         break;
 
-    case '/2fa/verify':
+    case $basePath . '/2fa/verify':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo "Method Not Allowed";
@@ -280,10 +296,89 @@ switch ($request) {
         (new App\Controllers\AuthController($pdo))->verify2FA();
         break;
 
+    // UserActionController routes - FIXED ROUTING
+    case $basePath . '/user-actions/track-page-view':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/UserActionController.php';
+        (new App\Controllers\UserActionController($pdo))->trackPageView($_GET['page'] ?? '');
+        break;
 
+    case $basePath . '/user-actions/activity-logs':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/UserActionController.php';
+        (new App\Controllers\UserActionController($pdo))->showActivityLogs();
+        break;
+
+    case $basePath . '/user-actions/track-action':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/UserActionController.php';
+        (new App\Controllers\UserActionController($pdo))->trackAction(
+            $_GET['page'] ?? '',
+            $_GET['action'] ?? ''
+        );
+        break;
+
+    // FIXED: Create form route - now matches JavaScript call
+    case $basePath . '/user-actions/create-form':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/UserActionController.php';
+        (new App\Controllers\UserActionController($pdo))->createForm();
+        break;
+
+    case $basePath . '/user-actions/store':
+        requireAuth();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo 'Method Not Allowed';
+            exit;
+        }
+        require __DIR__ . '/../src/Controllers/UserActionController.php';
+        (new App\Controllers\UserActionController($pdo))->store();
+        break;
+
+    case $basePath . '/user-actions/update':
+        requireAuth();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo "Method Not Allowed";
+            exit;
+        }
+        $id = $_POST['id'] ?? null;
+        if (!$id) {
+            http_response_code(400);
+            echo "Missing ID";
+            exit;
+        }
+        require __DIR__ . '/../src/Controllers/UserActionController.php';
+        (new App\Controllers\UserActionController($pdo))->update((int) $id, $_POST);
+        break;
+
+    case $basePath . '/user-actions/delete':
+        requireAuth();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo "Method Not Allowed";
+            exit;
+        }
+        require __DIR__ . '/../src/Controllers/UserActionController.php';
+        (new App\Controllers\UserActionController($pdo))->delete();
+        break;
+
+    case $basePath . '/user-actions/get-user-actions':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/UserActionController.php';
+        (new App\Controllers\UserActionController($pdo))->getUserActions();
+        break;
+
+    case $basePath . '/user-actions/update-user-actions':
+        requireAuth();
+        require __DIR__ . '/../src/Controllers/UserActionController.php';
+        (new App\Controllers\UserActionController($pdo))->updateUserActions();
+        break;
 
     default:
         http_response_code(404);
         echo "Page not found: " . htmlspecialchars($request);
         break;
 }
+?>

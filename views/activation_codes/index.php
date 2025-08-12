@@ -8,6 +8,7 @@
         padding: 0.25rem 0.5rem;
         border-radius: 0.375rem;
     }
+
     .license-key {
         font-family: 'Courier New', monospace;
         background: #f8f9fa;
@@ -15,6 +16,7 @@
         border-radius: 0.25rem;
         font-size: 0.875rem;
     }
+
     .bulk-actions {
         background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
         border: 1px solid #e1bee7;
@@ -22,21 +24,26 @@
         padding: 1rem;
         margin-bottom: 1rem;
     }
+
     .card-header {
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         border-bottom: 1px solid #dee2e6;
     }
+
     .table-hover tbody tr:hover {
         background-color: #f8f9fa;
         transition: background-color 0.15s ease-in-out;
     }
+
     .btn-group-sm .btn {
         padding: 0.25rem 0.5rem;
         font-size: 0.875rem;
     }
+
     .search-container {
         position: relative;
     }
+
     .search-icon {
         position: absolute;
         left: 0.75rem;
@@ -44,34 +51,42 @@
         transform: translateY(-50%);
         color: #6c757d;
     }
+
     .search-input {
         padding-left: 2.5rem;
     }
+
     @media (max-width: 768px) {
         .btn-toolbar {
             flex-direction: column;
             gap: 0.5rem;
         }
+
         .bulk-actions .row {
             flex-direction: column;
             gap: 1rem;
         }
     }
+
     .modal-content {
         border: none;
         box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
     }
+
     .modal-header {
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         border-bottom: 1px solid #dee2e6;
     }
+
     .modal-footer {
         border-top: 1px solid #dee2e6;
     }
+
     .delete-modal-icon {
         font-size: 3rem;
         color: #dc3545;
     }
+
     .total-display {
         background: #f8f9fa;
         padding: 12px 16px;
@@ -92,7 +107,8 @@
     </div>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addLicenseModal">
+            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
+                data-bs-target="#addLicenseModal">
                 <i class="fas fa-plus me-2"></i>Add New License
             </button>
         </div>
@@ -154,21 +170,24 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteLicenseModal" tabindex="-1" aria-labelledby="deleteLicenseModalLabel" aria-hidden="true">
+<div class="modal fade" id="deleteLicenseModal" tabindex="-1" aria-labelledby="deleteLicenseModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title" id="deleteLicenseModalLabel" style="color:black">
                     <i style="color: orange;" class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
             </div>
             <div class="modal-body text-center">
                 <div class="delete-modal-icon mb-3 fs-1 text-danger">
                     <i class="fas fa-trash-alt"></i>
                 </div>
                 <h5 class="text-dark">Are you sure you want to delete this license?</h5>
-                <p class="text-muted">This action cannot be undone. All data associated with this license will be permanently removed.</p>
+                <p class="text-muted">This action cannot be undone. All data associated with this license will be
+                    permanently removed.</p>
                 <div class="license-info bg-white border p-3 rounded mt-3 mb-3 shadow-sm">
                     <p class="mb-1"><strong>License ID:</strong> <span id="deleteLicenseId"></span></p>
                     <p class="mb-1"><strong>Name:</strong> <span id="deleteLicenseName"></span></p>
@@ -188,12 +207,14 @@
 </div>
 
 <!-- Add Payment For License Modal -->
-<div class="modal fade" id="addPaymentForLicenseModal" tabindex="-1" aria-labelledby="addPaymentForLicenseModalLabel" aria-hidden="true">
+<div class="modal fade" id="addPaymentForLicenseModal" tabindex="-1" aria-labelledby="addPaymentForLicenseModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="addPaymentForLicenseModalLabel">
-                    <i class="fas fa-dollar-sign me-2"></i>Add Payment for License <span id="modalLicenseName" class="text-primary"></span>
+                    <i class="fas fa-dollar-sign me-2"></i>Add Payment for License <span id="modalLicenseName"
+                        class="text-primary"></span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -224,14 +245,18 @@
             <div class="d-flex">
                 <!-- Status Filter Dropdown -->
                 <div class="dropdown me-2">
-                    <button class="btn btn-light dropdown-toggle" type="button" id="statusFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn btn-light dropdown-toggle" type="button" id="statusFilterDropdown"
+                        data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-filter me-1"></i> Status
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="statusFilterDropdown">
                         <li><a class="dropdown-item status-filter" href="#" data-status="">All Statuses</a></li>
-                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
                         <li><a class="dropdown-item status-filter" href="#" data-status="active">Active</a></li>
-                        <li><a class="dropdown-item status-filter" href="#" data-status="expiring">Expiring Soon</a></li>
+                        <li><a class="dropdown-item status-filter" href="#" data-status="expiring">Expiring Soon</a>
+                        </li>
                         <li><a class="dropdown-item status-filter" href="#" data-status="expired">Expired</a></li>
                     </ul>
                 </div>
@@ -281,128 +306,128 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
 
 <script>
-$(document).ready(function() {
-    // Initialize modals
-    let addLicenseModal = new bootstrap.Modal(document.getElementById('addLicenseModal'));
-    let editLicenseModal = new bootstrap.Modal(document.getElementById('editLicenseModal'));
-    let deleteLicenseModal = new bootstrap.Modal(document.getElementById('deleteLicenseModal'));
-    let addPaymentForLicenseModal = new bootstrap.Modal(document.getElementById('addPaymentForLicenseModal'));
-    
-    let currentLicenseId = null;
-    let table = null;
+    $(document).ready(function () {
+        // Initialize modals
+        let addLicenseModal = new bootstrap.Modal(document.getElementById('addLicenseModal'));
+        let editLicenseModal = new bootstrap.Modal(document.getElementById('editLicenseModal'));
+        let deleteLicenseModal = new bootstrap.Modal(document.getElementById('deleteLicenseModal'));
+        let addPaymentForLicenseModal = new bootstrap.Modal(document.getElementById('addPaymentForLicenseModal'));
 
-    // Initialize DataTable
-    table = $('#licenses-table').DataTable({
-        serverSide: true,
-        ajax: {
-            url: '<?= BASE_URL ?>/activation-codes/datatable',
-            type: 'POST',
-            data: function(d) {
-                const selectedStatus = $('.status-filter.active').data('status') || '';
-                d.status = selectedStatus;
-            }
-        },
-        columns: [
-            {
-                data: 'id',
-                className: 'fw-bold text-primary'
+        let currentLicenseId = null;
+        let table = null;
+
+        // Initialize DataTable
+        table = $('#licenses-table').DataTable({
+            serverSide: true,
+            ajax: {
+                url: '<?= BASE_URL ?>/activation-codes/datatable',
+                type: 'POST',
+                data: function (d) {
+                    const selectedStatus = $('.status-filter.active').data('status') || '';
+                    d.status = selectedStatus;
+                }
             },
-            {
-                data: 'name',
-                render: function(data, type, row) {
-                    return `<div class="d-flex align-items-center">
+            columns: [
+                {
+                    data: 'id',
+                    className: 'fw-bold text-primary'
+                },
+                {
+                    data: 'name',
+                    render: function (data, type, row) {
+                        return `<div class="d-flex align-items-center">
                             <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
                                 <i class="fas fa-user text-primary"></i>
                             </div>
                             <span class="fw-semibold">${data}</span>
                         </div>`;
-                }
-            },
-            {
-                data: 'license',
-                render: function(data, type, row) {
-                    if (type === 'display') {
-                        return `<div class="d-flex align-items-center">
+                    }
+                },
+                {
+                    data: 'license',
+                    render: function (data, type, row) {
+                        if (type === 'display') {
+                            return `<div class="d-flex align-items-center">
                                 <code class="license-key me-2">${data.substring(0, 12)}...</code>
                                 <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('${data}')" title="Copy to clipboard">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>`;
+                        }
+                        return data;
                     }
-                    return data;
-                }
-            },
-            {
-                data: 'valid_from',
-                render: function(data, type, row) {
-                    return `<span class="badge bg-light text-dark border">
+                },
+                {
+                    data: 'valid_from',
+                    render: function (data, type, row) {
+                        return `<span class="badge bg-light text-dark border">
                             <i class="fas fa-calendar-plus me-1"></i>${data}
                         </span>`;
-                }
-            },
-            {
-                data: 'valid_to',
-                render: function(data, type, row) {
-                    return `<span class="badge bg-light text-dark border">
+                    }
+                },
+                {
+                    data: 'valid_to',
+                    render: function (data, type, row) {
+                        return `<span class="badge bg-light text-dark border">
                             <i class="fas fa-calendar-times me-1"></i>${data}
                         </span>`;
-                }
-            },
-            {
-                data: 'status',
-                render: function(data, type, row) {
-                    if (type === 'display') {
-                        let badgeClass = '';
-                        let icon = '';
-                        if (data === 'expired') {
-                            badgeClass = 'bg-danger';
-                            icon = 'fa-times-circle';
-                        } else if (data === 'expiring') {
-                            badgeClass = 'bg-warning text-dark';
-                            icon = 'fa-exclamation-triangle';
-                        } else {
-                            badgeClass = 'bg-success';
-                            icon = 'fa-check-circle';
-                        }
-                        return `<span class="badge ${badgeClass} status-badge">
+                    }
+                },
+                {
+                    data: 'status',
+                    render: function (data, type, row) {
+                        if (type === 'display') {
+                            let badgeClass = '';
+                            let icon = '';
+                            if (data === 'expired') {
+                                badgeClass = 'bg-danger';
+                                icon = 'fa-times-circle';
+                            } else if (data === 'expiring') {
+                                badgeClass = 'bg-warning text-dark';
+                                icon = 'fa-exclamation-triangle';
+                            } else {
+                                badgeClass = 'bg-success';
+                                icon = 'fa-check-circle';
+                            }
+                            return `<span class="badge ${badgeClass} status-badge">
                                 <i class="fas ${icon} me-1"></i>
                                 ${data.charAt(0).toUpperCase() + data.slice(1)}
                             </span>`;
+                        }
+                        return data;
                     }
-                    return data;
-                }
-            },
-            {
-                data: 'days_left',
-                render: function(data, type, row) {
-                    if (type === 'display') {
-                        if (row.status === 'expired') {
-                            return `<span class="badge bg-danger">
+                },
+                {
+                    data: 'days_left',
+                    render: function (data, type, row) {
+                        if (type === 'display') {
+                            if (row.status === 'expired') {
+                                return `<span class="badge bg-danger">
                                     <i class="fas fa-exclamation-circle me-1"></i>
                                     ${Math.abs(data)} days ago
                                 </span>`;
-                        } else if (row.status === 'expiring') {
-                            return `<span class="badge bg-warning text-dark">
+                            } else if (row.status === 'expiring') {
+                                return `<span class="badge bg-warning text-dark">
                                     <i class="fas fa-clock me-1"></i>
                                     ${data} days left
                                 </span>`;
-                        } else {
-                            return `<span class="badge bg-success">
+                            } else {
+                                return `<span class="badge bg-success">
                                     <i class="fas fa-check me-1"></i>
                                     ${data} days left
                                 </span>`;
+                            }
                         }
+                        return data;
                     }
-                    return data;
-                }
-            },
-            {
-                data: 'id',
-                orderable: false,
-                className: 'text-center',
-                render: function(data, type, row) {
-                    if (type === 'display') {
-                        return `<div class="btn-group btn-group-sm" role="group">
+                },
+                {
+                    data: 'id',
+                    orderable: false,
+                    className: 'text-center',
+                    render: function (data, type, row) {
+                        if (type === 'display') {
+                            return `<div class="btn-group btn-group-sm" role="group">
                                 <button type="button" class="btn btn-outline-primary"
                                          onclick="showEditModal(${data})" title="Edit License">
                                     <i class="fas fa-edit"></i>
@@ -416,101 +441,101 @@ $(document).ready(function() {
                                     <i class="fas fa-dollar-sign"></i>
                                 </button>
                             </div>`;
+                        }
+                        return data;
                     }
-                    return data;
                 }
+            ],
+            order: [[5, 'desc']],
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            dom: '<"top"Bfl>rt<"bottom"ip>',
+            buttons: [
+                {
+                    extend: 'csv',
+                    text: '<i class="fas fa-file-csv me-2"></i>CSV',
+                    className: 'btn btn-light btn-sm border mx-1'
+                },
+                {
+                    extend: 'excel',
+                    text: '<i class="fas fa-file-excel me-2"></i>Excel',
+                    className: 'btn btn-light btn-sm border mx-1'
+                },
+                {
+                    extend: 'pdf',
+                    text: '<i class="fas fa-file-pdf me-2"></i>PDF',
+                    className: 'btn btn-light btn-sm border mx-1'
+                },
+                {
+                    extend: 'print',
+                    text: '<i class="fas fa-print me-2"></i>Print',
+                    className: 'btn btn-light btn-sm border mx-1'
+                }
+            ],
+            language: {
+                processing: '<div class="d-flex justify-content-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>',
+                emptyTable: '<div class="text-center py-4"><i class="fas fa-inbox fa-3x text-muted mb-3"></i><br><h5 class="text-muted">No licenses found</h5><p class="text-muted">Try adjusting your search criteria</p></div>',
+                zeroRecords: '<div class="text-center py-4"><i class="fas fa-search fa-3x text-muted mb-3"></i><br><h5 class="text-muted">No matching records found</h5><p class="text-muted">Try different search terms</p></div>'
+            },
+            drawCallback: function () {
+                updateTableInfo();
             }
-        ],
-        order: [[5, 'desc']],
-        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-        dom: '<"top"Bfl>rt<"bottom"ip>',
-        buttons: [
-            {
-                extend: 'csv',
-                text: '<i class="fas fa-file-csv me-2"></i>CSV',
-                className: 'btn btn-light btn-sm border mx-1'
-            },
-            {
-                extend: 'excel',
-                text: '<i class="fas fa-file-excel me-2"></i>Excel',
-                className: 'btn btn-light btn-sm border mx-1'
-            },
-            {
-                extend: 'pdf',
-                text: '<i class="fas fa-file-pdf me-2"></i>PDF',
-                className: 'btn btn-light btn-sm border mx-1'
-            },
-            {
-                extend: 'print',
-                text: '<i class="fas fa-print me-2"></i>Print',
-                className: 'btn btn-light btn-sm border mx-1'
-            }
-        ],
-        language: {
-            processing: '<div class="d-flex justify-content-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>',
-            emptyTable: '<div class="text-center py-4"><i class="fas fa-inbox fa-3x text-muted mb-3"></i><br><h5 class="text-muted">No licenses found</h5><p class="text-muted">Try adjusting your search criteria</p></div>',
-            zeroRecords: '<div class="text-center py-4"><i class="fas fa-search fa-3x text-muted mb-3"></i><br><h5 class="text-muted">No matching records found</h5><p class="text-muted">Try different search terms</p></div>'
-        },
-        drawCallback: function() {
-            updateTableInfo();
-        }
-    });
-
-    // Load add license form when modal is shown
-    $('#addLicenseModal').on('show.bs.modal', function() {
-        loadAddLicenseForm();
-    });
-
-    // Clean up modal when hidden
-    $('#addLicenseModal').on('hidden.bs.modal', function() {
-        // Remove any remaining backdrop
-        $('.modal-backdrop').remove();
-        $('body').removeClass('modal-open').css('padding-right', '');
-        
-        // Reset modal content
-        $('#addLicenseModalBody').html(`
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2">Loading license form...</p>
-            </div>
-        `);
-    });
-
-    // Status filter handler
-    $('.status-filter').on('click', function(e) {
-        e.preventDefault();
-        const status = $(this).data('status');
-        const statusText = $(this).text();
-
-        $('#statusFilterDropdown').html(
-            `<i class="fas fa-filter me-1"></i> ${status ? statusText : 'All Statuses'}`
-        );
-
-        $('.status-filter').removeClass('active');
-        $(this).addClass('active');
-
-        table.ajax.reload(function() {
-            showToast(`Filtered by: ${status ? statusText : 'All Statuses'}`, 'info');
         });
-    });
 
-    // Confirm delete button handler
-    $('#confirmDeleteBtn').on('click', function() {
-        deleteLicense(currentLicenseId);
-        deleteLicenseModal.hide();
-    });
+        // Load add license form when modal is shown
+        $('#addLicenseModal').on('show.bs.modal', function () {
+            loadAddLicenseForm();
+        });
 
-    // Payment for license modal submit
-    $(document).on('click', '#submitPaymentForLicense', function(e) {
-        e.preventDefault();
-        submitPaymentForLicenseForm();
-    });
+        // Clean up modal when hidden
+        $('#addLicenseModal').on('hidden.bs.modal', function () {
+            // Remove any remaining backdrop
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open').css('padding-right', '');
 
-    // Functions
-    function loadAddLicenseForm() {
-        $('#addLicenseModalBody').html(`
+            // Reset modal content
+            $('#addLicenseModalBody').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading license form...</p>
+            </div>
+        `);
+        });
+
+        // Status filter handler
+        $('.status-filter').on('click', function (e) {
+            e.preventDefault();
+            const status = $(this).data('status');
+            const statusText = $(this).text();
+
+            $('#statusFilterDropdown').html(
+                `<i class="fas fa-filter me-1"></i> ${status ? statusText : 'All Statuses'}`
+            );
+
+            $('.status-filter').removeClass('active');
+            $(this).addClass('active');
+
+            table.ajax.reload(function () {
+                showToast(`Filtered by: ${status ? statusText : 'All Statuses'}`, 'info');
+            });
+        });
+
+        // Confirm delete button handler
+        $('#confirmDeleteBtn').on('click', function () {
+            deleteLicense(currentLicenseId);
+            deleteLicenseModal.hide();
+        });
+
+        // Payment for license modal submit
+        $(document).on('click', '#submitPaymentForLicense', function (e) {
+            e.preventDefault();
+            submitPaymentForLicenseForm();
+        });
+
+        // Functions
+        function loadAddLicenseForm() {
+            $('#addLicenseModalBody').html(`
             <div class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
@@ -519,85 +544,85 @@ $(document).ready(function() {
             </div>
         `);
 
-        $.get('<?= BASE_URL ?>/activation-codes/create', function(data) {
-            $('#addLicenseModalBody').html(data);
-            initLicenseForm();
-        }).fail(function() {
-            $('#addLicenseModalBody').html(`
+            $.get('<?= BASE_URL ?>/activation-codes/create', function (data) {
+                $('#addLicenseModalBody').html(data);
+                initLicenseForm();
+            }).fail(function () {
+                $('#addLicenseModalBody').html(`
                 <div class="alert alert-danger">
                     Failed to load form. Please try again.
                 </div>
             `);
-        });
-    }
+            });
+        }
 
-    function initLicenseForm() {
-        $('#licenseForm').off('submit').on('submit', function(e) {
-            e.preventDefault();
-            submitLicenseForm();
-        });
+        function initLicenseForm() {
+            $('#licenseForm').off('submit').on('submit', function (e) {
+                e.preventDefault();
+                submitLicenseForm();
+            });
 
-        const today = new Date().toISOString().split('T')[0];
-        const oneYearLater = new Date();
-        oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
-        const oneYearLaterStr = oneYearLater.toISOString().split('T')[0];
+            const today = new Date().toISOString().split('T')[0];
+            const oneYearLater = new Date();
+            oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+            const oneYearLaterStr = oneYearLater.toISOString().split('T')[0];
 
-        $('#valid_from').val(today);
-        $('#valid_to').val(oneYearLaterStr);
-    }
+            $('#valid_from').val(today);
+            $('#valid_to').val(oneYearLaterStr);
+        }
 
-    function submitLicenseForm() {
-        const $submitBtn = $('#licenseForm button[type="submit"]');
-        const originalText = $submitBtn.html();
-        
-        $.ajax({
-            url: '<?= BASE_URL ?>/activation-codes/create',
-            type: 'POST',
-            data: $('#licenseForm').serialize(),
-            dataType: 'json',
-            beforeSend: function() {
-                $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Creating...');
-            },
-            success: function(response) {
-                if (response.success) {
-                    showToast('✅ License created successfully!', 'success');
-                    table.ajax.reload(null, false);
-                    
-                    // Properly close modal and clean up
-                    addLicenseModal.hide();
-                    
-                    // Force cleanup after a short delay
-                    setTimeout(function() {
-                        $('.modal-backdrop').remove();
-                        $('body').removeClass('modal-open').css('padding-right', '');
-                    }, 300);
-                    
-                } else {
-                    if (response.errors) {
-                        let errorHtml = '<ul>';
-                        response.errors.forEach(function(err) {
-                            errorHtml += '<li>' + err + '</li>';
-                        });
-                        errorHtml += '</ul>';
-                        showToast(errorHtml, 'danger');
+        function submitLicenseForm() {
+            const $submitBtn = $('#licenseForm button[type="submit"]');
+            const originalText = $submitBtn.html();
+
+            $.ajax({
+                url: '<?= BASE_URL ?>/activation-codes/create',
+                type: 'POST',
+                data: $('#licenseForm').serialize(),
+                dataType: 'json',
+                beforeSend: function () {
+                    $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Creating...');
+                },
+                success: function (response) {
+                    if (response.success) {
+                        showToast('✅ License created successfully!', 'success');
+                        table.ajax.reload(null, false);
+
+                        // Properly close modal and clean up
+                        addLicenseModal.hide();
+
+                        // Force cleanup after a short delay
+                        setTimeout(function () {
+                            $('.modal-backdrop').remove();
+                            $('body').removeClass('modal-open').css('padding-right', '');
+                        }, 300);
+
                     } else {
-                        showToast('❌ ' + (response.message || 'Unknown error'), 'danger');
+                        if (response.errors) {
+                            let errorHtml = '<ul>';
+                            response.errors.forEach(function (err) {
+                                errorHtml += '<li>' + err + '</li>';
+                            });
+                            errorHtml += '</ul>';
+                            showToast(errorHtml, 'danger');
+                        } else {
+                            showToast('❌ ' + (response.message || 'Unknown error'), 'danger');
+                        }
                     }
+                },
+                error: function (xhr) {
+                    console.error('License creation error:', xhr);
+                    showToast('❌ Error creating license. Please try again.', 'danger');
+                },
+                complete: function () {
+                    $submitBtn.prop('disabled', false).html(originalText);
                 }
-            },
-            error: function(xhr) {
-                console.error('License creation error:', xhr);
-                showToast('❌ Error creating license. Please try again.', 'danger');
-            },
-            complete: function() {
-                $submitBtn.prop('disabled', false).html(originalText);
-            }
-        });
-    }
+            });
+        }
 
-    window.showEditModal = function(id) {
-        currentLicenseId = id;
-        $('#editLicenseModalBody').html(`
+        window.showEditModal = function (id) {
+            currentLicenseId = id;
+            $('#editLicenseModalBody').html(`
             <div class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
@@ -606,115 +631,115 @@ $(document).ready(function() {
             </div>
         `);
 
-        editLicenseModal.show();
+            editLicenseModal.show();
 
-        $.get('<?= BASE_URL ?>/activation-codes/edit?id=' + id)
-            .done(function(data) {
-                $('#editLicenseModalBody').html(data);
-                attachEditFormHandler();
-            })
-            .fail(function() {
-                $('#editLicenseModalBody').html(`
+            $.get('<?= BASE_URL ?>/activation-codes/edit?id=' + id)
+                .done(function (data) {
+                    $('#editLicenseModalBody').html(data);
+                    attachEditFormHandler();
+                })
+                .fail(function () {
+                    $('#editLicenseModalBody').html(`
                     <div class="alert alert-danger">
                         Failed to load license details. Please try again.
                     </div>
                 `);
-            });
-    };
+                });
+        };
 
-    function attachEditFormHandler() {
-        $('#editLicenseForm').off('submit').on('submit', function(e) {
-            e.preventDefault();
-            const form = $(this);
-            const url = form.attr('action');
-            const formData = form.serialize();
+        function attachEditFormHandler() {
+            $('#editLicenseForm').off('submit').on('submit', function (e) {
+                e.preventDefault();
+                const form = $(this);
+                const url = form.attr('action');
+                const formData = form.serialize();
 
-            $('.date-error').remove();
+                $('.date-error').remove();
 
-            const validFromVal = $('#valid_from').val();
-            const validToVal = $('#valid_to').val();
-            const validFrom = new Date(validFromVal);
-            const validTo = new Date(validToVal);
+                const validFromVal = $('#valid_from').val();
+                const validToVal = $('#valid_to').val();
+                const validFrom = new Date(validFromVal);
+                const validTo = new Date(validToVal);
 
-            if (!validFromVal || isNaN(validFrom.getTime()) || !validToVal || isNaN(validTo.getTime())) {
-                $('#valid_to').after(`
+                if (!validFromVal || isNaN(validFrom.getTime()) || !validToVal || isNaN(validTo.getTime())) {
+                    $('#valid_to').after(`
                     <div class="invalid-feedback date-error" style="display: block; color: #dc3545; margin-top: 0.25rem;">
                         Please provide valid dates for both fields.
                     </div>
                 `);
-                return;
-            }
+                    return;
+                }
 
-            if (validTo <= validFrom) {
-                $('#valid_to').after(`
+                if (validTo <= validFrom) {
+                    $('#valid_to').after(`
                     <div class="invalid-feedback date-error" style="display: block; color: #dc3545; margin-top: 0.25rem;">
                         End date must be after the start date.
                     </div>
                 `);
-                return;
-            }
+                    return;
+                }
 
-            const submitBtn = form.find('button[type="submit"]');
-            const originalText = submitBtn.html();
-            submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Saving...');
+                const submitBtn = form.find('button[type="submit"]');
+                const originalText = submitBtn.html();
+                submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Saving...');
 
-            $.ajax({
-                type: 'POST',
-                url: url,
-                data: formData,
-                success: function(response) {
-                    editLicenseModal.hide();
-                    table.ajax.reload(null, false);
-                    showToast('✅ License updated successfully!', 'success');
-                },
-                error: function(xhr) {
-                    if (xhr.responseText) {
-                        $('#editLicenseModalBody').html(xhr.responseText);
-                        attachEditFormHandler();
+                $.ajax({
+                    type: 'POST',
+                    url: url,
+                    data: formData,
+                    success: function (response) {
+                        editLicenseModal.hide();
+                        table.ajax.reload(null, false);
+                        showToast('✅ License updated successfully!', 'success');
+                    },
+                    error: function (xhr) {
+                        if (xhr.responseText) {
+                            $('#editLicenseModalBody').html(xhr.responseText);
+                            attachEditFormHandler();
+                        }
+                    },
+                    complete: function () {
+                        submitBtn.prop('disabled', false).html(originalText);
                     }
+                });
+            });
+        }
+
+        window.showDeleteModal = function (id, name, license) {
+            currentLicenseId = id;
+            $('#deleteLicenseId').text(id);
+            $('#deleteLicenseName').text(name);
+            $('#deleteLicenseKey').text(license.substring(0, 12) + '...');
+            deleteLicenseModal.show();
+        };
+
+        window.copyToClipboard = function (text) {
+            navigator.clipboard.writeText(text).then(function () {
+                showToast('License key copied to clipboard!', 'success');
+            });
+        };
+
+        function deleteLicense(id) {
+            $.ajax({
+                url: '<?= BASE_URL ?>/activation-codes/delete?id=' + id,
+                type: 'POST',
+                beforeSend: function () {
+                    showToast('Deleting license...', 'info');
                 },
-                complete: function() {
-                    submitBtn.prop('disabled', false).html(originalText);
+                success: function (response) {
+                    table.ajax.reload();
+                    showToast('✅ License deleted successfully!', 'success');
+                },
+                error: function (xhr) {
+                    showToast('❌ Error deleting license: ' + xhr.responseText, 'danger');
                 }
             });
-        });
-    }
+        }
 
-    window.showDeleteModal = function(id, name, license) {
-        currentLicenseId = id;
-        $('#deleteLicenseId').text(id);
-        $('#deleteLicenseName').text(name);
-        $('#deleteLicenseKey').text(license.substring(0, 12) + '...');
-        deleteLicenseModal.show();
-    };
-
-    window.copyToClipboard = function(text) {
-        navigator.clipboard.writeText(text).then(function() {
-            showToast('License key copied to clipboard!', 'success');
-        });
-    };
-
-    function deleteLicense(id) {
-        $.ajax({
-            url: '<?= BASE_URL ?>/activation-codes/delete?id=' + id,
-            type: 'POST',
-            beforeSend: function() {
-                showToast('Deleting license...', 'info');
-            },
-            success: function(response) {
-                table.ajax.reload();
-                showToast('✅ License deleted successfully!', 'success');
-            },
-            error: function(xhr) {
-                showToast('❌ Error deleting license: ' + xhr.responseText, 'danger');
-            }
-        });
-    }
-
-    window.showAddPaymentForLicenseModal = function(licenseId, licenseName) {
-        currentLicenseId = licenseId;
-        $('#modalLicenseName').text(`(License ID: ${licenseId})`);
-        $('#addPaymentForLicenseModalBody').html(`
+        window.showAddPaymentForLicenseModal = function (licenseId, licenseName) {
+            currentLicenseId = licenseId;
+            $('#modalLicenseName').text(`(License ID: ${licenseId})`);
+            $('#addPaymentForLicenseModalBody').html(`
             <div class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
@@ -723,103 +748,103 @@ $(document).ready(function() {
             </div>
         `);
 
-        addPaymentForLicenseModal.show();
+            addPaymentForLicenseModal.show();
 
-        $.get(`<?= BASE_URL ?>/payments-manager/create-payment-for-license-form?license_id=${licenseId}&license_name=${encodeURIComponent(licenseName)}`, function(data) {
-            $('#addPaymentForLicenseModalBody').html(data);
-            initPaymentForLicenseForm();
-        }).fail(function() {
-            $('#addPaymentForLicenseModalBody').html(`
+            $.get(`<?= BASE_URL ?>/payments-manager/create-payment-for-license-form?license_id=${licenseId}&license_name=${encodeURIComponent(licenseName)}`, function (data) {
+                $('#addPaymentForLicenseModalBody').html(data);
+                initPaymentForLicenseForm();
+            }).fail(function () {
+                $('#addPaymentForLicenseModalBody').html(`
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-triangle me-2"></i>
                     Failed to load payment form. Please try again.
                 </div>
             `);
-        });
-    };
-
-    function initPaymentForLicenseForm() {
-        const today = new Date().toISOString().split('T')[0];
-        $('#addPaymentForLicenseForm #payment_date').val(today);
-
-        $('#addPaymentForLicenseForm #method').change(function() {
-            if ($(this).val() === 'other') {
-                $('#addPaymentForLicenseForm #customMethod').show().attr('required', true);
-            } else {
-                $('#addPaymentForLicenseForm #customMethod').hide().removeAttr('required');
-            }
-        });
-    }
-
-    function submitPaymentForLicenseForm() {
-        const form = $('#addPaymentForLicenseForm');
-        const formData = {
-            license_id: form.find('input[name="license_id"]').val(),
-            client_id: form.find('#client_id').val(),
-            amount: form.find('#amount').val(),
-            method: form.find('#method').val() === 'other' ? form.find('#customMethod').val() : form.find('#method').val(),
-            payment_date: form.find('#payment_date').val(),
-            note: form.find('#note').val()
+            });
         };
 
-        const $button = $('#submitPaymentForLicense');
-        const originalText = $button.html();
-        $button.html('<i class="fas fa-spinner fa-spin me-2"></i>Saving...').prop('disabled', true);
+        function initPaymentForLicenseForm() {
+            const today = new Date().toISOString().split('T')[0];
+            $('#addPaymentForLicenseForm #payment_date').val(today);
 
-        $.ajax({
-            url: '<?= BASE_URL ?>/payments-manager/create-payment-for-license',
-            method: 'POST',
-            data: formData,
-            dataType: 'json',
-            success: function(response) {
-                if (response.error) {
-                    showToast(response.error, 'danger');
+            $('#addPaymentForLicenseForm #method').change(function () {
+                if ($(this).val() === 'other') {
+                    $('#addPaymentForLicenseForm #customMethod').show().attr('required', true);
                 } else {
-                    showToast('Payment created successfully!', 'success');
-                    addPaymentForLicenseModal.hide();
-                    table.ajax.reload(null, false);
-                    form[0].reset();
-                    form.find('#customMethod').hide().removeAttr('required');
+                    $('#addPaymentForLicenseForm #customMethod').hide().removeAttr('required');
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error('Create payment for license error:', xhr.responseText);
-                let errorMessage = 'An error occurred while creating the payment for license';
-                try {
-                    const errorResponse = JSON.parse(xhr.responseText);
-                    errorMessage = errorResponse.error || errorMessage;
-                } catch (e) {
-                    errorMessage = xhr.responseText || errorMessage;
+            });
+        }
+
+        function submitPaymentForLicenseForm() {
+            const form = $('#addPaymentForLicenseForm');
+            const formData = {
+                license_id: form.find('input[name="license_id"]').val(),
+                client_id: form.find('#client_id').val(),
+                amount: form.find('#amount').val(),
+                method: form.find('#method').val() === 'other' ? form.find('#customMethod').val() : form.find('#method').val(),
+                payment_date: form.find('#payment_date').val(),
+                note: form.find('#note').val()
+            };
+
+            const $button = $('#submitPaymentForLicense');
+            const originalText = $button.html();
+            $button.html('<i class="fas fa-spinner fa-spin me-2"></i>Saving...').prop('disabled', true);
+
+            $.ajax({
+                url: '<?= BASE_URL ?>/payments-manager/create-payment-for-license',
+                method: 'POST',
+                data: formData,
+                dataType: 'json',
+                success: function (response) {
+                    if (response.error) {
+                        showToast(response.error, 'danger');
+                    } else {
+                        showToast('Payment created successfully!', 'success');
+                        addPaymentForLicenseModal.hide();
+                        table.ajax.reload(null, false);
+                        form[0].reset();
+                        form.find('#customMethod').hide().removeAttr('required');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Create payment for license error:', xhr.responseText);
+                    let errorMessage = 'An error occurred while creating the payment for license';
+                    try {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        errorMessage = errorResponse.error || errorMessage;
+                    } catch (e) {
+                        errorMessage = xhr.responseText || errorMessage;
+                    }
+                    showToast(errorMessage, 'danger');
+                },
+                complete: function () {
+                    $button.html(originalText).prop('disabled', false);
                 }
-                showToast(errorMessage, 'danger');
-            },
-            complete: function() {
-                $button.html(originalText).prop('disabled', false);
-            }
-        });
-    }
+            });
+        }
 
-    function updateTableInfo() {
-        const info = table.page.info();
-        $('#datatable-info').html(
-            `<i class="fas fa-info-circle me-1"></i>Showing ${info.start + 1} to ${info.end} of ${info.recordsTotal} licenses`
-        );
-    }
+        function updateTableInfo() {
+            const info = table.page.info();
+            $('#datatable-info').html(
+                `<i class="fas fa-info-circle me-1"></i>Showing ${info.start + 1} to ${info.end} of ${info.recordsTotal} licenses`
+            );
+        }
 
-    function showToast(message, type) {
-        const toastId = 'toast-' + Date.now();
-        const iconMap = {
-            'success': 'fa-check-circle',
-            'danger': 'fa-exclamation-circle',
-            'warning': 'fa-exclamation-triangle',
-            'info': 'fa-info-circle'
-        };
+        function showToast(message, type) {
+            const toastId = 'toast-' + Date.now();
+            const iconMap = {
+                'success': 'fa-check-circle',
+                'danger': 'fa-exclamation-circle',
+                'warning': 'fa-exclamation-triangle',
+                'info': 'fa-info-circle'
+            };
 
-        const toast = document.createElement('div');
-        toast.id = toastId;
-        toast.className = `toast align-items-center text-white bg-${type} border-0 position-fixed shadow-lg`;
-        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        toast.innerHTML = `
+            const toast = document.createElement('div');
+            toast.id = toastId;
+            toast.className = `toast align-items-center text-white bg-${type} border-0 position-fixed shadow-lg`;
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.innerHTML = `
             <div class="d-flex">
                 <div class="toast-body d-flex align-items-center">
                     <i class="fas ${iconMap[type]} me-2 fs-5"></i>
@@ -829,17 +854,17 @@ $(document).ready(function() {
             </div>
         `;
 
-        document.body.appendChild(toast);
-        const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
-        bsToast.show();
+            document.body.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
+            bsToast.show();
 
-        setTimeout(() => {
-            if (document.getElementById(toastId)) {
-                document.body.removeChild(toast);
-            }
-        }, 5000);
-    }
-});
+            setTimeout(() => {
+                if (document.getElementById(toastId)) {
+                    document.body.removeChild(toast);
+                }
+            }, 5000);
+        }
+    });
 </script>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>
