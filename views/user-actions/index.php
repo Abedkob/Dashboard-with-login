@@ -63,7 +63,8 @@
     </div>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-            <button type="button" class="btn btn-primary shadow-sm" id="createActionBtn">
+            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
+                data-bs-target="#createActionModal">
                 <i class="fas fa-plus me-2"></i>Create New Action
             </button>
         </div>
@@ -169,14 +170,13 @@
                         <?php endif; ?>
                         <th><i class="fas fa-file-alt me-1"></i>Page</th>
                         <th><i class="fas fa-bolt me-1"></i>Action</th>
-
                         <th width="120" class="text-center"><i class="fas fa-cogs me-1"></i>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($actions)): ?>
                         <tr>
-                            <td colspan="<?= $isAdmin ? 5 : 4 ?>" class="text-center py-4">
+                            <td colspan="<?= $isAdmin ? 4 : 3 ?>" class="text-center py-4">
                                 <div class="text-center">
                                     <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                                     <h5 class="text-muted">No user actions found</h5>
@@ -210,7 +210,6 @@
                                         <i class="fas fa-bolt me-1"></i><?= htmlspecialchars($log['action']) ?>
                                     </span>
                                 </td>
-                            
                                 <td class="text-center">
                                     <?php if ($canDelete): ?>
                                         <div class="btn-group btn-group-sm" role="group">
@@ -282,13 +281,77 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body" id="modalFormContainer">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+            <div class="modal-body">
+                <form id="userActionForm" method="post" action="<?= BASE_URL ?>/user-actions/store"
+                    class="needs-validation" novalidate>
+                    <!-- User Selection -->
+                    <div class="mb-4">
+                        <label for="user_id" class="form-label fw-semibold">
+                            <i class="fas fa-user me-2 text-primary"></i>Select User
+                        </label>
+                        <select name="user_id" id="user_id" class="form-select shadow-sm" required>
+                            <option value="" disabled selected>-- Choose a user --</option>
+                            <?php foreach ($availableUsers as $user): ?>
+                                <option value="<?= (int) $user['user_id'] ?>" data-user-id="<?= (int) $user['user_id'] ?>">
+                                    <?= htmlspecialchars($user['username'] ?? 'User #' . $user['user_id']) ?>
+                                    <small class="text-muted">(ID: <?= (int) $user['user_id'] ?>)</small>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="invalid-feedback">
+                            <i class="fas fa-exclamation-circle me-1"></i>Please select a valid user
+                        </div>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>Choose the user who will have this action permission
+                        </div>
                     </div>
-                    <p class="mt-2">Loading form...</p>
-                </div>
+
+                    <!-- Page Selection -->
+                    <div class="mb-4">
+                        <label for="page" class="form-label fw-semibold">
+                            <i class="fas fa-file-alt me-2 text-primary"></i>Page/Module
+                        </label>
+                        <select name="page" id="page" class="form-select shadow-sm" required>
+                            <option value="" disabled selected>-- Select a page --</option>
+                            <?php foreach ($availablePages as $page): ?>
+                                <option value="<?= htmlspecialchars($page) ?>">
+                                    <?= htmlspecialchars($page) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="invalid-feedback">
+                            <i class="fas fa-exclamation-circle me-1"></i>Please select a page/module
+                        </div>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>Select the page or module for this permission
+                        </div>
+                    </div>
+
+                    <!-- Action Selection -->
+                    <div class="mb-4">
+                        <label for="action" class="form-label fw-semibold">
+                            <i class="fas fa-bolt me-2 text-primary"></i>Action
+                        </label>
+                        <select name="action" id="action" class="form-select shadow-sm" required disabled>
+                            <option value="" disabled selected>-- Select an action --</option>
+                        </select>
+                        <div class="invalid-feedback">
+                            <i class="fas fa-exclamation-circle me-1"></i>Please select an action
+                        </div>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>Choose what action the user can perform on this page
+                        </div>
+                    </div>
+
+                    <!-- Action Description -->
+                    <div class="mb-4" id="actionDescription" style="display: none;">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Action Details:</strong>
+                            <span id="actionDescriptionText"></span>
+                        </div>
+                    </div>
+                </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -353,15 +416,6 @@
         // Initialize filters
         initializeFilters();
 
-        // Create action button handler - Fixed event binding
-        document.addEventListener('click', function (e) {
-            if (e.target && (e.target.id === 'createActionBtn' || e.target.closest('#createActionBtn'))) {
-                e.preventDefault();
-                console.log('Create button clicked'); // Debug log
-                loadCreateForm();
-            }
-        });
-
         // Submit action button handler
         const submitBtn = document.getElementById('submitActionBtn');
         if (submitBtn) {
@@ -378,6 +432,88 @@
                     performDelete(currentDeleteId);
                 }
             });
+        }
+
+        // Form elements for dynamic behavior
+        const pageSelect = document.getElementById('page');
+        const actionSelect = document.getElementById('action');
+        const actionDescription = document.getElementById('actionDescription');
+        const actionDescriptionText = document.getElementById('actionDescriptionText');
+
+        // Action descriptions for better UX
+        const actionDescriptions = {
+            'view': 'Allows the user to view and access this page',
+            'create': 'Allows the user to create new records',
+            'read': 'Allows the user to read and view existing records',
+            'update': 'Allows the user to edit and modify existing records',
+            'delete': 'Allows the user to delete existing records',
+            'manage permissions': 'Allows the user to manage permissions for other users',
+            'add payment': 'Allows the user to add payment records',
+            'renew licenses': 'Allows the user to renew license records'
+        };
+
+        // Initialize form dynamic behavior if elements exist
+        if (pageSelect && actionSelect) {
+            // Handle page selection change
+            pageSelect.addEventListener('change', function () {
+                const selectedPage = this.value;
+                populateActions(selectedPage);
+            });
+
+            // Handle action selection change
+            actionSelect.addEventListener('change', function () {
+                const selectedAction = this.value;
+                if (selectedAction && actionDescriptions[selectedAction] && actionDescription && actionDescriptionText) {
+                    actionDescriptionText.textContent = actionDescriptions[selectedAction];
+                    actionDescription.style.display = 'block';
+                } else if (actionDescription) {
+                    actionDescription.style.display = 'none';
+                }
+            });
+        }
+
+        // Reset form when modal is hidden
+        createModalElement.addEventListener('hidden.bs.modal', function () {
+            const form = document.getElementById('userActionForm');
+            if (form) {
+                form.reset();
+                form.classList.remove('was-validated');
+
+                // Reset action select
+                actionSelect.innerHTML = '<option value="" disabled selected>-- Select an action --</option>';
+                actionSelect.disabled = true;
+
+                // Hide description
+                if (actionDescription) {
+                    actionDescription.style.display = 'none';
+                }
+            }
+        });
+
+        function populateActions(selectedPage) {
+            const actions = allActions[selectedPage] || [];
+
+            // Clear and reset action select
+            actionSelect.innerHTML = '<option value="" disabled selected>-- Select an action --</option>';
+            actionSelect.disabled = actions.length === 0;
+
+            // Hide description initially
+            if (actionDescription) {
+                actionDescription.style.display = 'none';
+            }
+
+            // Populate actions
+            actions.forEach(action => {
+                const option = document.createElement('option');
+                option.value = action;
+                option.textContent = action.charAt(0).toUpperCase() + action.slice(1);
+                actionSelect.appendChild(option);
+            });
+
+            // Enable action select if we have actions
+            if (actions.length > 0) {
+                actionSelect.disabled = false;
+            }
         }
 
         function initializeFilters() {
@@ -420,81 +556,6 @@
             }
         }
 
-        function loadCreateForm() {
-            console.log('Loading create form...'); // Debug log
-
-            if (!createActionModal) {
-                console.error('Create modal not initialized');
-                showToast('Modal not available', 'danger');
-                return;
-            }
-
-            const modalContainer = document.getElementById('modalFormContainer');
-            if (!modalContainer) {
-                console.error('Modal container not found');
-                showToast('Modal container not found', 'danger');
-                return;
-            }
-
-            modalContainer.innerHTML = `
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2">Loading form...</p>
-            </div>
-        `;
-
-            // Show modal first
-            createActionModal.show();
-
-            // Try the correct URL path based on your router
-            const formUrl = '<?= BASE_URL ?>/user-actions/create-form';
-            console.log('Fetching form from:', formUrl); // Debug log
-
-            fetch(formUrl)
-                .then(response => {
-                    console.log('Form response status:', response.status); // Debug log
-                    console.log('Form response headers:', response.headers); // Debug log
-
-                    if (!response.ok) {
-                        return response.text().then(text => {
-                            throw new Error(`HTTP ${response.status}: ${response.statusText}\nResponse: ${text}`);
-                        });
-                    }
-                    return response.text();
-                })
-                .then(html => {
-                    console.log('Form HTML loaded successfully, length:', html.length); // Debug log
-                    console.log('First 200 chars:', html.substring(0, 200)); // Debug log
-
-                    if (html.trim().length === 0) {
-                        throw new Error('Empty response received');
-                    }
-
-                    modalContainer.innerHTML = html;
-
-                    // Initialize form after loading
-                    initializeFormHandlers();
-                })
-                .catch(error => {
-                    console.error('Error loading form:', error);
-                    modalContainer.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Failed to load the create action form. Please try again.
-                        <br><small class="text-muted">Error: ${error.message}</small>
-                        <br><small class="text-muted">URL: ${formUrl}</small>
-                    </div>
-                `;
-                });
-        }
-
-        function initializeFormHandlers() {
-            // Any additional form initialization can go here
-            console.log('Form handlers initialized');
-        }
-
         function submitCreateForm() {
             const form = document.getElementById('userActionForm');
             if (!form) {
@@ -509,7 +570,12 @@
                 return;
             }
 
-            const formData = new FormData(form);
+            // Get form data properly
+            const formData = new FormData();
+            formData.append('user_id', document.getElementById('user_id').value);
+            formData.append('page', document.getElementById('page').value);
+            formData.append('action', document.getElementById('action').value);
+
             const submitBtn = document.getElementById('submitActionBtn');
             const originalText = submitBtn.innerHTML;
 
@@ -517,16 +583,30 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
 
-            fetch(form.action, {
+            // Use the correct URL
+            const submitUrl = '<?= BASE_URL ?>/user-actions/store';
+            console.log('Submitting to:', submitUrl);
+            console.log('Form data:', {
+                user_id: document.getElementById('user_id').value,
+                page: document.getElementById('page').value,
+                action: document.getElementById('action').value
+            });
+
+            fetch(submitUrl, {
                 method: 'POST',
                 body: formData
             })
                 .then(response => {
-                    console.log('Submit response status:', response.status); // Debug log
+                    console.log('Submit response status:', response.status);
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(`HTTP ${response.status}: ${text}`);
+                        });
+                    }
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Submit response data:', data); // Debug log
+                    console.log('Submit response data:', data);
                     if (data.success) {
                         showToast('User action created successfully!', 'success');
                         createActionModal.hide();
@@ -541,7 +621,7 @@
                 })
                 .catch(error => {
                     console.error('Error submitting form:', error);
-                    showToast('Network error occurred', 'danger');
+                    showToast('Network error occurred: ' + error.message, 'danger');
                 })
                 .finally(() => {
                     submitBtn.disabled = false;
@@ -563,7 +643,7 @@
                     </div>
                     <p class="mt-2">Refreshing data...</p>
                 </div>
-            `;
+                `;
             }
 
             // Fetch updated content
@@ -666,7 +746,7 @@
                 </div>
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
             </div>
-        `;
+            `;
 
             document.body.appendChild(toast);
             const bsToast = new bootstrap.Toast(toast, { delay: 4000 });

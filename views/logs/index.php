@@ -439,20 +439,6 @@
             });
         }
 
-        // Load user filter options
-        function loadUserFilterOptions() {
-            $.get('<?= BASE_URL ?>/logs/get-users', function (data) {
-                const select = $('#userFilter');
-
-                if (data && data.length > 0) {
-                    data.forEach(user => {
-                        select.append(`<option value="${user.id}">${user.username}</option>`);
-                    });
-                }
-            }).fail(function () {
-                console.error('Failed to load user filter options');
-            });
-        }
 
         // Action filter handler
         $(document).on('click', '.action-filter', function (e) {
