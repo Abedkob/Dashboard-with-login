@@ -73,7 +73,15 @@
         <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
             <i class="fas fa-user-shield text-primary fs-4"></i>
         </div>
-        <h1 class="h2 mb-0 text-dark fw-bold">User Actions Manager</h1>
+        <div>
+            <h1 class="h2 mb-0 text-dark fw-bold">User Actions Manager</h1>
+            <?php if (!$isAdmin): ?>
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Viewing your permissions only
+                </small>
+            <?php endif; ?>
+        </div>
     </div>
     <?php if ($canView): ?>
         <div class="btn-toolbar mb-2 mb-md-0">
@@ -85,8 +93,9 @@
                     </button>
                 <?php else: ?>
                     <button type="button" class="btn btn-secondary shadow-sm disabled-button" 
-                        title="You don't have permission to create user actions" disabled>
-                        <i class="fas fa-lock me-2"></i>Create New Action
+                        title="<?= $isAdmin ? "You don't have permission to create user actions" : "Contact your administrator to modify permissions" ?>" disabled>
+                        <i class="fas fa-lock me-2"></i>
+                        <?= $isAdmin ? "Create New Action" : "Request Permission Change" ?>
                     </button>
                 <?php endif; ?>
             </div>
@@ -328,20 +337,48 @@
                         <label for="user_id" class="form-label fw-semibold">
                             <i class="fas fa-user me-2 text-primary"></i>Select User
                         </label>
-                        <select name="user_id" id="user_id" class="form-select shadow-sm" required>
-                            <option value="" disabled selected>-- Choose a user --</option>
-                            <?php foreach ($availableUsers as $user): ?>
-                                <option value="<?= (int) $user['user_id'] ?>" data-user-id="<?= (int) $user['user_id'] ?>">
-                                    <?= htmlspecialchars($user['username'] ?? 'User #' . $user['user_id']) ?>
-                                    <small class="text-muted">(ID: <?= (int) $user['user_id'] ?>)</small>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                        <?php if ($isAdmin): ?>
+                            <select name="user_id" id="user_id" class="form-select shadow-sm" required>
+                                <option value="" disabled selected>-- Choose a user --</option>
+                                <?php if (!empty($availableUsers)): ?>
+                                    <?php foreach ($availableUsers as $user): ?>
+                                        <option value="<?= (int) $user['user_id'] ?>" data-user-id="<?= (int) $user['user_id'] ?>">
+                                            <?= htmlspecialchars($user['username'] ?? 'User #' . $user['user_id']) ?>
+                                            (ID: <?= (int) $user['user_id'] ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <option value="" disabled>No users available</option>
+                                <?php endif; ?>
+                            </select>
+                        <?php else: ?>
+                            <!-- Non-admin users can only select themselves -->
+                            <select name="user_id" id="user_id" class="form-select shadow-sm" required readonly>
+                                <?php if (!empty($availableUsers)): ?>
+                                    <?php $currentUser = $availableUsers[0]; ?>
+                                    <option value="<?= (int) $currentUser['user_id'] ?>" selected>
+                                        <?= htmlspecialchars($currentUser['username']) ?> (You)
+                                    </option>
+                                <?php else: ?>
+                                    <option value="<?= (int) ($_SESSION['user_id'] ?? 0) ?>" selected>
+                                        <?= htmlspecialchars($_SESSION['username'] ?? 'Current User') ?> (You)
+                                    </option>
+                                <?php endif; ?>
+                            </select>
+                        <?php endif; ?>
                         <div class="invalid-feedback">
                             <i class="fas fa-exclamation-circle me-1"></i>Please select a valid user
                         </div>
                         <div class="form-text">
-                            <i class="fas fa-info-circle me-1"></i>Choose the user who will have this action permission
+                            <i class="fas fa-info-circle me-1"></i>
+                            <?php if ($isAdmin): ?>
+                                Choose the user who will have this action permission
+                            <?php else: ?>
+                                You can only manage permissions for yourself
+                            <?php endif; ?>
+                            <?php if (empty($availableUsers)): ?>
+                                <br><small class="text-warning">No users found. Please ensure users exist in the system.</small>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -443,18 +480,40 @@
     const userPermissions = {
         canCreate: <?= json_encode($canCreate) ?>,
         canView: <?= json_encode($canView) ?>,
-        canDelete: <?= json_encode($canDelete) ?>
+        canDelete: <?= json_encode($canDelete) ?>,
+        isAdmin: <?= json_encode($isAdmin) ?>
     };
 
     document.addEventListener('DOMContentLoaded', function () {
+        // Debug: Check if users are available
+        console.log('Available users:', <?= json_encode($availableUsers) ?>);
+        console.log('User permissions:', userPermissions);
+        console.log('Is admin:', userPermissions.isAdmin);
+        
         // Only initialize if user has view permission
         if (!userPermissions.canView) {
+            console.log('User does not have view permission');
             return;
+        }
+
+        // Show appropriate message for non-admin users
+        if (!userPermissions.isAdmin && !userPermissions.canCreate) {
+            console.log('Non-admin user with limited permissions');
+            showToast('You have view-only access to user actions', 'info');
         }
 
         const allActions = <?= json_encode($availableActions) ?>;
         let createActionModal, deleteActionModal;
         let currentDeleteId = null;
+
+        // Check if user dropdown has options
+        const userSelect = document.getElementById('user_id');
+        if (userSelect) {
+            console.log('User select options count:', userSelect.options.length);
+            if (userSelect.options.length <= 1) {
+                console.warn('No users available in dropdown');
+            }
+        }
 
         // Initialize modals only if user has permissions
         if (userPermissions.canCreate) {

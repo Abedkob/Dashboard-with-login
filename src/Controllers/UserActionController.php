@@ -251,12 +251,40 @@ if (!class_exists('App\Controllers\UserActionController')) {
                 $availablePages = array_keys($this->allowedActions);
                 $availableActions = $this->allowedActions;
 
-                $availableUsers = $isAdmin ? $this->userActionModel->getUsers() : [];
+                // Get available users based on user permissions
+                if ($isAdmin) {
+                    $availableUsers = $this->userActionModel->getUsers();
+                } else {
+                    // Regular users can only see themselves in the dropdown
+                    $currentUserId = (int) ($_SESSION['user_id'] ?? 0);
+                    $currentUsername = $_SESSION['username'] ?? 'Current User';
+                    $availableUsers = [
+                        [
+                            'user_id' => $currentUserId,
+                            'username' => $currentUsername
+                        ]
+                    ];
+                }
 
-                // Permission checks for UI elements
+                // Debug: Log user data
+                error_log("UserActionController::showActivityLogs() - Available users count: " . count($availableUsers));
+                error_log("UserActionController::showActivityLogs() - Is admin: " . ($isAdmin ? 'true' : 'false'));
+                error_log("UserActionController::showActivityLogs() - User data: " . print_r($availableUsers, true));
+
+                // Permission checks for UI elements - more granular for non-admin users
                 $canCreate = $this->hasPermission('Roles', 'create');
                 $canView = $this->hasPermission('Roles', 'view');
                 $canDelete = $this->hasPermission('Roles', 'delete');
+
+                // For non-admin users, they can only manage their own permissions
+                if (!$isAdmin) {
+                    // Non-admin users can view their own permissions but may not create/delete
+                    $canCreate = false; // Regular users typically shouldn't create permissions for others
+                    $canDelete = false; // Regular users typically shouldn't delete permissions
+                }
+
+                // Debug: Log permissions
+                error_log("UserActionController::showActivityLogs() - Permissions - Create: " . ($canCreate ? 'true' : 'false') . ", View: " . ($canView ? 'true' : 'false') . ", Delete: " . ($canDelete ? 'true' : 'false'));
 
                 require __DIR__ . '/../../views/user-actions/index.php';
             } catch (Exception $e) {
@@ -333,7 +361,7 @@ if (!class_exists('App\Controllers\UserActionController')) {
 
                 $availablePages = array_keys($this->allowedActions);
                 $availableActions = $this->allowedActions;
-                $availableUsers = $this->userActionModel->getUsers();
+                $availableUsers = $this->getAvailableUsers();
 
                 // Make BASE_URL available for the form
                 if (!defined('BASE_URL')) {
@@ -343,6 +371,7 @@ if (!class_exists('App\Controllers\UserActionController')) {
                 error_log("UserActionController::createForm() - Loading form");
                 error_log("Available pages: " . print_r($availablePages, true));
                 error_log("Available users count: " . count($availableUsers));
+                error_log("Available users data: " . print_r($availableUsers, true));
 
                 // Include the form template
                 require __DIR__ . '/../../views/user-actions/_form.php';
@@ -380,6 +409,21 @@ if (!class_exists('App\Controllers\UserActionController')) {
                 error_log("UserActionController::getUserPermissions() - " . $e->getMessage());
                 http_response_code(500);
                 echo json_encode(['success' => false, 'error' => 'An unexpected error occurred']);
+            }
+        }
+
+        /**
+         * Get all users for dropdown selection
+         */
+        public function getAvailableUsers(): array
+        {
+            try {
+                $users = $this->userActionModel->getUsers();
+                error_log("UserActionController::getAvailableUsers() - Found " . count($users) . " users");
+                return $users;
+            } catch (Exception $e) {
+                error_log("UserActionController::getAvailableUsers() - Error: " . $e->getMessage());
+                return [];
             }
         }
 
