@@ -1,6 +1,8 @@
 <?php
 namespace App\Controllers;
 
+use Exception;
+
 class DashboardController
 {
     private $pdo;
@@ -10,22 +12,106 @@ class DashboardController
         $this->pdo = $pdo;
     }
 
+    /**
+     * Check if current user has permission for a specific action
+     */
+    private function hasPermission(string $page, string $action): bool
+    {
+        // Admin users have all permissions
+        if (($_SESSION['user_level'] ?? 0) === 1) {
+            return true;
+        }
+
+        // Check if user is authenticated
+        if (!isset($_SESSION['user_id'])) {
+            return false;
+        }
+
+        $userId = (int) $_SESSION['user_id'];
+
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT COUNT(*) 
+                FROM user_actions 
+                WHERE user_id = ? AND page = ? AND action = ?
+            ");
+            $stmt->execute([$userId, $page, $action]);
+            return $stmt->fetchColumn() > 0;
+        } catch (\PDOException $e) {
+            error_log("Permission check error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Require permission for current user - throws exception if not authorized
+     */
+    private function requirePermission(string $page, string $action): void
+    {
+        if (!$this->hasPermission($page, $action)) {
+            throw new Exception("Access denied. You don't have permission to $action on $page");
+        }
+    }
+
     public function index()
     {
-        // Initialize statistics
-        $stats = [
-            'total' => 0,
-            'active' => 0,
-            'expired' => 0,
-            'expiring' => 0,
-            'recent' => [],
-            'expiring_details' => [],
-            'monthly_data' => $this->getMonthlyLicenseData(),
-            // New payment statistics
-            'payments' => $this->getPaymentStatistics(),
-            'monthly_revenue' => $this->getMonthlyRevenueData()
-        ];
+        try {
+            // Check permission to view dashboard
+            $this->requirePermission('Dashboard', 'view');
 
+            // Check specific permissions for UI elements
+            $canRenewLicenses = $this->hasPermission('Dashboard', 'renew licenses');
+            $canViewLicenses = $this->hasPermission('License Manager', 'view');
+            $canEditLicenses = $this->hasPermission('License Manager', 'update');
+            $canViewPayments = $this->hasPermission('Payments', 'view');
+
+            // Initialize statistics
+            $stats = [
+                'total' => 0,
+                'active' => 0,
+                'expired' => 0,
+                'expiring' => 0,
+                'recent' => [],
+                'expiring_details' => [],
+                'monthly_data' => $this->getMonthlyLicenseData(),
+                'payments' => $canViewPayments ? $this->getPaymentStatistics() : $this->getEmptyPaymentStats(),
+                'monthly_revenue' => $canViewPayments ? $this->getMonthlyRevenueData() : $this->getEmptyRevenueData()
+            ];
+
+            // Only load license data if user has permission
+            if ($canViewLicenses) {
+                $stats = $this->loadLicenseStatistics($stats);
+            }
+
+            // Pass permissions to view
+            $permissions = [
+                'canRenewLicenses' => $canRenewLicenses,
+                'canViewLicenses' => $canViewLicenses,
+                'canEditLicenses' => $canEditLicenses,
+                'canViewPayments' => $canViewPayments
+            ];
+
+            // Debug output
+            error_log("Dashboard permissions: " . print_r($permissions, true));
+            error_log("Monthly Data: " . print_r($stats['monthly_data'], true));
+            error_log("Payment Stats: " . print_r($stats['payments'], true));
+            error_log("Monthly Revenue: " . print_r($stats['monthly_revenue'], true));
+
+            // Load view
+            require __DIR__ . '/../../views/dashboard.php';
+
+        } catch (Exception $e) {
+            error_log("Dashboard access error: " . $e->getMessage());
+
+            // Show access denied page
+            $errorMessage = $e->getMessage();
+            require __DIR__ . '/../../views/errors/403.php';
+            return;
+        }
+    }
+
+    private function loadLicenseStatistics($stats)
+    {
         try {
             // Total codes
             $stmt = $this->pdo->query("SELECT COUNT(*) FROM projects_list");
@@ -73,17 +159,9 @@ class DashboardController
         } catch (\PDOException $e) {
             error_log("Database error in DashboardController: " . $e->getMessage());
             $_SESSION['error'] = "Error loading dashboard data";
-            header('Location: ' . url('login'));
-            exit;
         }
 
-        // Debug output
-        error_log("Monthly Data: " . print_r($stats['monthly_data'], true));
-        error_log("Payment Stats: " . print_r($stats['payments'], true));
-        error_log("Monthly Revenue: " . print_r($stats['monthly_revenue'], true));
-
-        // Load view
-        require __DIR__ . '/../../views/dashboard.php';
+        return $stats;
     }
 
     private function getPaymentStatistics()
@@ -169,6 +247,19 @@ class DashboardController
         return $stats;
     }
 
+    private function getEmptyPaymentStats()
+    {
+        return [
+            'total_payments' => 0,
+            'total_revenue' => 0,
+            'this_month_revenue' => 0,
+            'this_month_payments' => 0,
+            'average_payment' => 0,
+            'top_paying_clients' => [],
+            'recent_payments' => []
+        ];
+    }
+
     private function getMonthlyRevenueData()
     {
         $data = [
@@ -247,6 +338,15 @@ class DashboardController
         }
 
         return $data;
+    }
+
+    private function getEmptyRevenueData()
+    {
+        return [
+            'labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            'revenue' => [0, 0, 0, 0, 0, 0],
+            'payment_count' => [0, 0, 0, 0, 0, 0]
+        ];
     }
 
     private function getMonthlyLicenseData()
