@@ -1,6 +1,14 @@
 <?php include __DIR__ . '/../layouts/header.php'; ?>
 <?php require_once __DIR__ . '/../../public/config.php'; ?>
 
+<!-- Permission Variables for JavaScript -->
+<script>
+    window.logPermissions = {
+        canView: <?= json_encode($canView ?? false) ?>,
+        canExport: <?= json_encode($canExport ?? false) ?>
+    };
+</script>
+
 <!-- Custom Styles -->
 <style>
     .status-badge {
@@ -125,6 +133,16 @@
         max-height: 300px;
         overflow-y: auto;
     }
+
+    .permission-denied {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    .permission-denied::after {
+        content: " 🔒";
+        color: #dc3545;
+    }
 </style>
 
 <!-- Page Header -->
@@ -137,9 +155,16 @@
     </div>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-            <button type="button" class="btn btn-outline-secondary shadow-sm" onclick="location.reload()">
-                <i class="fas fa-sync-alt me-2"></i>Refresh
-            </button>
+            <?php if ($canView ?? false): ?>
+                <button type="button" class="btn btn-outline-secondary shadow-sm" onclick="location.reload()">
+                    <i class="fas fa-sync-alt me-2"></i>Refresh
+                </button>
+            <?php else: ?>
+                <button type="button" class="btn btn-outline-secondary shadow-sm permission-denied" disabled
+                    title="You don't have permission to refresh logs">
+                    <i class="fas fa-lock me-2"></i>Refresh
+                </button>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -154,38 +179,49 @@
     <?php unset($_SESSION['success']); ?>
 <?php endif; ?>
 
-<!-- Filters Card -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header">
-        <h5 class="mb-0 d-flex align-items-center">
-            <i class="fas fa-filter me-2 text-primary"></i>
-            Filters
-        </h5>
+<!-- Permission Denied Alert -->
+<?php if (!($canView ?? false)): ?>
+    <div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Limited Access:</strong> You have restricted access to activity logs. Some features may be disabled.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-    <div class="card-body">
-        <form id="logsFilterForm">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label for="dateFrom" class="form-label">From Date</label>
-                    <input type="date" class="form-control" id="dateFrom" name="date_from">
-                </div>
-                <div class="col-md-3">
-                    <label for="dateTo" class="form-label">To Date</label>
-                    <input type="date" class="form-control" id="dateTo" name="date_to">
-                </div>
+<?php endif; ?>
 
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">
-                        <i class="fas fa-filter me-2"></i> Apply Filters
-                    </button>
-                    <button type="reset" class="btn btn-outline-secondary" id="resetFilters">
-                        <i class="fas fa-undo me-2"></i> Reset
-                    </button>
+<!-- Filters Card -->
+<?php if ($canView ?? false): ?>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 d-flex align-items-center">
+                <i class="fas fa-filter me-2 text-primary"></i>
+                Filters
+            </h5>
+        </div>
+        <div class="card-body">
+            <form id="logsFilterForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="dateFrom" class="form-label">From Date</label>
+                        <input type="date" class="form-control" id="dateFrom" name="date_from">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="dateTo" class="form-label">To Date</label>
+                        <input type="date" class="form-control" id="dateTo" name="date_to">
+                    </div>
+
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="fas fa-filter me-2"></i> Apply Filters
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary" id="resetFilters">
+                            <i class="fas fa-undo me-2"></i> Reset
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
-</div>
+<?php endif; ?>
 
 <!-- Logs Table -->
 <div class="card shadow-sm">
@@ -197,72 +233,87 @@
             </h5>
             <div class="d-flex">
                 <!-- Action Filter Dropdown -->
-                <div class="dropdown me-2">
-                    <button class="btn btn-light dropdown-toggle" type="button" id="actionFilterDropdown"
-                        data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-bolt me-1"></i> Action
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="actionFilterDropdown" id="actionFilterMenu">
-                        <li><a class="dropdown-item action-filter active" href="#" data-action="">All Actions</a></li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <!-- Action options will be populated dynamically -->
-                    </ul>
-                </div>
+                <?php if ($canView ?? false): ?>
+                    <div class="dropdown me-2">
+                        <button class="btn btn-light dropdown-toggle" type="button" id="actionFilterDropdown"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-bolt me-1"></i> Action
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="actionFilterDropdown" id="actionFilterMenu">
+                            <li><a class="dropdown-item action-filter active" href="#" data-action="">All Actions</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <!-- Action options will be populated dynamically -->
+                        </ul>
+                    </div>
+                <?php endif; ?>
                 <small class="text-muted" id="datatable-info">
                     <i class="fas fa-info-circle me-1"></i>
-                    Loading logs...
+                    <?= ($canView ?? false) ? 'Loading logs...' : 'Access restricted' ?>
                 </small>
             </div>
         </div>
     </div>
     <div class="card-body p-0">
-        <div class="table-responsive">
-            <table id="logs-table" class="table table-hover mb-0" style="width:100%">
-                <thead class="table-light">
-                    <tr>
-                        <th><i class="fas fa-hashtag me-1"></i>ID</th>
-                        <th><i class="fas fa-user me-1"></i>User</th>
-                        <th><i class="fas fa-bolt me-1"></i>Action</th>
-                        <th><i class="fas fa-align-left me-1"></i>Description</th>
-                        <th><i class="fas fa-network-wired me-1"></i>IP Address</th>
-                        <th><i class="fas fa-clock me-1"></i>Date/Time</th>
-                        <th width="100" class="text-center"><i class="fas fa-cogs me-1"></i>Actions</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <?php if ($canView ?? false): ?>
+            <div class="table-responsive">
+                <table id="logs-table" class="table table-hover mb-0" style="width:100%">
+                    <thead class="table-light">
+                        <tr>
+                            <th><i class="fas fa-hashtag me-1"></i>ID</th>
+                            <th><i class="fas fa-user me-1"></i>User</th>
+                            <th><i class="fas fa-bolt me-1"></i>Action</th>
+                            <th><i class="fas fa-align-left me-1"></i>Description</th>
+                            <th><i class="fas fa-network-wired me-1"></i>IP Address</th>
+                            <th><i class="fas fa-clock me-1"></i>Date/Time</th>
+                            <th width="100" class="text-center"><i class="fas fa-cogs me-1"></i>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        <?php else: ?>
+            <div class="text-center py-5">
+                <i class="fas fa-lock fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Access Denied</h5>
+                <p class="text-muted">You don't have permission to view activity logs.</p>
+                <a href="/dashboard" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Return to Dashboard
+                </a>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
 <!-- Modal for full description -->
-<div class="modal fade" id="descriptionModal" tabindex="-1" aria-labelledby="descriptionModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="descriptionModalLabel">
-                    <i class="fas fa-align-left me-2"></i>Activity Log Details
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="modalDescriptionContent">
-                <div class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-2">Loading description...</p>
+<?php if ($canView ?? false): ?>
+    <div class="modal fade" id="descriptionModal" tabindex="-1" aria-labelledby="descriptionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="descriptionModalLabel">
+                        <i class="fas fa-align-left me-2"></i>Activity Log Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Close
-                </button>
+                <div class="modal-body" id="modalDescriptionContent">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading description...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Close
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
+<?php endif; ?>
 
 <!-- DataTables CSS -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
@@ -283,6 +334,12 @@
 
 <script>
     $(document).ready(function () {
+        // Check permissions before initializing
+        if (!window.logPermissions.canView) {
+            console.log('User does not have permission to view logs');
+            return;
+        }
+
         let logsTable = null;
         let descriptionModal = new bootstrap.Modal(document.getElementById('descriptionModal'));
 
@@ -297,6 +354,13 @@
                     d.date_to = $('#dateTo').val();
                     d.user_filter = $('#userFilter').val();
                     d.action_filter = $('.action-filter.active').data('action') || '';
+                },
+                error: function (xhr, error, code) {
+                    if (xhr.status === 403) {
+                        showToast('Access denied. You do not have permission to view logs.', 'danger');
+                    } else {
+                        showToast('Error loading logs: ' + error, 'danger');
+                    }
                 }
             },
             columns: [
@@ -353,6 +417,10 @@
                     orderable: false,
                     className: 'text-center',
                     render: function (data, type, row) {
+                        if (!window.logPermissions.canView) {
+                            return '<span class="text-muted">No actions available</span>';
+                        }
+
                         return `<div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-outline-primary"
                                      onclick="showDescriptionModal(${data})" title="View Full Description">
@@ -365,7 +433,7 @@
             order: [[0, 'desc']],
             lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
             dom: '<"top-controls"<"d-flex justify-content-between align-items-center"<"dt-buttons"B>l>>f<"mt-3"rt><"bottom"ip>',
-            buttons: [
+            buttons: window.logPermissions.canExport ? [
                 {
                     extend: 'csv',
                     text: '<i class="fas fa-file-csv me-2"></i>CSV',
@@ -402,7 +470,7 @@
                         modifier: { search: 'applied' }
                     }
                 }
-            ],
+            ] : [],
             language: {
                 processing: '<div class="d-flex justify-content-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>',
                 emptyTable: '<div class="text-center py-4"><i class="fas fa-inbox fa-3x text-muted mb-3"></i><br><h5 class="text-muted">No activity logs found</h5><p class="text-muted">Try adjusting your filters</p></div>',
@@ -415,10 +483,13 @@
 
         // Load filter options
         loadActionFilterOptions();
-        loadUserFilterOptions();
 
         // Load action filter options
         function loadActionFilterOptions() {
+            if (!window.logPermissions.canView) {
+                return;
+            }
+
             $.get('<?= BASE_URL ?>/logs/get-actions', function (data) {
                 const menu = $('#actionFilterMenu');
                 // Keep the "All Actions" option and divider
@@ -434,15 +505,24 @@
                     `);
                     });
                 }
-            }).fail(function () {
-                console.error('Failed to load action filter options');
+            }).fail(function (xhr) {
+                if (xhr.status === 403) {
+                    showToast('Access denied. You do not have permission to load filter options.', 'danger');
+                } else {
+                    console.error('Failed to load action filter options');
+                }
             });
         }
-
 
         // Action filter handler
         $(document).on('click', '.action-filter', function (e) {
             e.preventDefault();
+
+            if (!window.logPermissions.canView) {
+                showToast('You do not have permission to filter logs.', 'danger');
+                return;
+            }
+
             const action = $(this).data('action');
             const actionText = $(this).text();
 
@@ -465,6 +545,12 @@
         // Filter submit reloads table with validation
         $('#logsFilterForm').on('submit', function (e) {
             e.preventDefault();
+
+            if (!window.logPermissions.canView) {
+                showToast('You do not have permission to filter logs.', 'danger');
+                return;
+            }
+
             const fromDate = $('#dateFrom').val();
             const toDate = $('#dateTo').val();
 
@@ -480,6 +566,11 @@
 
         // Reset filters and reload table
         $('#resetFilters').on('click', function () {
+            if (!window.logPermissions.canView) {
+                showToast('You do not have permission to reset filters.', 'danger');
+                return;
+            }
+
             $('#logsFilterForm')[0].reset();
             // Also reset the action filter
             $('.action-filter').removeClass('active');
@@ -492,6 +583,11 @@
 
         // Show description modal with user-friendly formatting
         window.showDescriptionModal = function (logId) {
+            if (!window.logPermissions.canView) {
+                showToast('You do not have permission to view log details.', 'danger');
+                return;
+            }
+
             $('#modalDescriptionContent').html(`
             <div class="text-center py-4">
                 <div class="spinner-border text-primary" role="status">
@@ -521,11 +617,15 @@
                     `);
                     }
                 },
-                error: function () {
+                error: function (xhr) {
+                    let errorMessage = 'Failed to load description. Please try again.';
+                    if (xhr.status === 403) {
+                        errorMessage = 'Access denied. You do not have permission to view this log entry.';
+                    }
                     $('#modalDescriptionContent').html(`
                     <div class="alert alert-danger">
                         <i class="fas fa-exclamation-triangle me-2"></i>
-                        Failed to load description. Please try again.
+                        ${errorMessage}
                     </div>
                 `);
                 }
