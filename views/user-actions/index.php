@@ -45,6 +45,20 @@
         border-radius: 0.25rem;
     }
 
+    .permission-denied {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        text-align: center;
+        color: #6c757d;
+    }
+
+    .disabled-button {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
     @media (max-width: 768px) {
         .btn-toolbar {
             flex-direction: column;
@@ -61,15 +75,35 @@
         </div>
         <h1 class="h2 mb-0 text-dark fw-bold">User Actions Manager</h1>
     </div>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <div class="btn-group me-2">
-            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
-                data-bs-target="#createActionModal">
-                <i class="fas fa-plus me-2"></i>Create New Action
-            </button>
+    <?php if ($canView): ?>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <?php if ($canCreate): ?>
+                    <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
+                        data-bs-target="#createActionModal">
+                        <i class="fas fa-plus me-2"></i>Create New Action
+                    </button>
+                <?php else: ?>
+                    <button type="button" class="btn btn-secondary shadow-sm disabled-button" 
+                        title="You don't have permission to create user actions" disabled>
+                        <i class="fas fa-lock me-2"></i>Create New Action
+                    </button>
+                <?php endif; ?>
+            </div>
         </div>
-    </div>
+    <?php endif; ?>
 </div>
+
+<?php if (!$canView): ?>
+    <!-- Access Denied Message -->
+    <div class="permission-denied">
+        <div class="mb-3">
+            <i class="fas fa-lock fa-3x text-muted"></i>
+        </div>
+        <h4 class="text-muted">Access Restricted</h4>
+        <p class="mb-0">You don't have permission to view user actions. Please contact your administrator for access.</p>
+    </div>
+<?php else: ?>
 
 <!-- Success/Error Messages -->
 <?php if (isset($_SESSION['flash_message'])): ?>
@@ -218,6 +252,10 @@
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
+                                    <?php else: ?>
+                                        <span class="text-muted small">
+                                            <i class="fas fa-lock me-1"></i>No actions available
+                                        </span>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -270,6 +308,7 @@
     </nav>
 <?php endif; ?>
 
+<?php if ($canCreate): ?>
 <!-- Create Action Modal -->
 <div class="modal fade" id="createActionModal" tabindex="-1" aria-labelledby="createActionModalLabel"
     aria-hidden="true">
@@ -364,7 +403,9 @@
         </div>
     </div>
 </div>
+<?php endif; ?>
 
+<?php if ($canDelete): ?>
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteActionModal" tabindex="-1" aria-labelledby="deleteActionModalLabel"
     aria-hidden="true">
@@ -395,43 +436,72 @@
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <script>
+    // Pass permission data to JavaScript
+    const userPermissions = {
+        canCreate: <?= json_encode($canCreate) ?>,
+        canView: <?= json_encode($canView) ?>,
+        canDelete: <?= json_encode($canDelete) ?>
+    };
+
     document.addEventListener('DOMContentLoaded', function () {
+        // Only initialize if user has view permission
+        if (!userPermissions.canView) {
+            return;
+        }
+
         const allActions = <?= json_encode($availableActions) ?>;
         let createActionModal, deleteActionModal;
         let currentDeleteId = null;
 
-        // Initialize modals
-        const createModalElement = document.getElementById('createActionModal');
-        const deleteModalElement = document.getElementById('deleteActionModal');
-
-        if (createModalElement) {
-            createActionModal = new bootstrap.Modal(createModalElement);
+        // Initialize modals only if user has permissions
+        if (userPermissions.canCreate) {
+            const createModalElement = document.getElementById('createActionModal');
+            if (createModalElement) {
+                createActionModal = new bootstrap.Modal(createModalElement);
+            }
         }
-        if (deleteModalElement) {
-            deleteActionModal = new bootstrap.Modal(deleteModalElement);
+
+        if (userPermissions.canDelete) {
+            const deleteModalElement = document.getElementById('deleteActionModal');
+            if (deleteModalElement) {
+                deleteActionModal = new bootstrap.Modal(deleteModalElement);
+            }
         }
 
         // Initialize filters
         initializeFilters();
 
         // Submit action button handler
-        const submitBtn = document.getElementById('submitActionBtn');
-        if (submitBtn) {
-            submitBtn.addEventListener('click', function () {
-                submitCreateForm();
-            });
+        if (userPermissions.canCreate) {
+            const submitBtn = document.getElementById('submitActionBtn');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', function () {
+                    if (!userPermissions.canCreate) {
+                        showToast('You do not have permission to create user actions', 'danger');
+                        return;
+                    }
+                    submitCreateForm();
+                });
+            }
         }
 
         // Confirm delete button handler
-        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-        if (confirmDeleteBtn) {
-            confirmDeleteBtn.addEventListener('click', function () {
-                if (currentDeleteId) {
-                    performDelete(currentDeleteId);
-                }
-            });
+        if (userPermissions.canDelete) {
+            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+            if (confirmDeleteBtn) {
+                confirmDeleteBtn.addEventListener('click', function () {
+                    if (!userPermissions.canDelete) {
+                        showToast('You do not have permission to delete user actions', 'danger');
+                        return;
+                    }
+                    if (currentDeleteId) {
+                        performDelete(currentDeleteId);
+                    }
+                });
+            }
         }
 
         // Form elements for dynamic behavior
@@ -452,8 +522,8 @@
             'renew licenses': 'Allows the user to renew license records'
         };
 
-        // Initialize form dynamic behavior if elements exist
-        if (pageSelect && actionSelect) {
+        // Initialize form dynamic behavior if elements exist and user has create permission
+        if (userPermissions.canCreate && pageSelect && actionSelect) {
             // Handle page selection change
             pageSelect.addEventListener('change', function () {
                 const selectedPage = this.value;
@@ -470,27 +540,32 @@
                     actionDescription.style.display = 'none';
                 }
             });
+
+            // Reset form when modal is hidden
+            const createModalElement = document.getElementById('createActionModal');
+            if (createModalElement) {
+                createModalElement.addEventListener('hidden.bs.modal', function () {
+                    const form = document.getElementById('userActionForm');
+                    if (form) {
+                        form.reset();
+                        form.classList.remove('was-validated');
+
+                        // Reset action select
+                        actionSelect.innerHTML = '<option value="" disabled selected>-- Select an action --</option>';
+                        actionSelect.disabled = true;
+
+                        // Hide description
+                        if (actionDescription) {
+                            actionDescription.style.display = 'none';
+                        }
+                    }
+                });
+            }
         }
 
-        // Reset form when modal is hidden
-        createModalElement.addEventListener('hidden.bs.modal', function () {
-            const form = document.getElementById('userActionForm');
-            if (form) {
-                form.reset();
-                form.classList.remove('was-validated');
-
-                // Reset action select
-                actionSelect.innerHTML = '<option value="" disabled selected>-- Select an action --</option>';
-                actionSelect.disabled = true;
-
-                // Hide description
-                if (actionDescription) {
-                    actionDescription.style.display = 'none';
-                }
-            }
-        });
-
         function populateActions(selectedPage) {
+            if (!userPermissions.canCreate) return;
+
             const actions = allActions[selectedPage] || [];
 
             // Clear and reset action select
@@ -557,6 +632,11 @@
         }
 
         function submitCreateForm() {
+            if (!userPermissions.canCreate) {
+                showToast('You do not have permission to create user actions', 'danger');
+                return;
+            }
+
             const form = document.getElementById('userActionForm');
             if (!form) {
                 showToast('Form not found', 'danger');
@@ -585,19 +665,15 @@
 
             // Use the correct URL
             const submitUrl = '<?= BASE_URL ?>/user-actions/store';
-            console.log('Submitting to:', submitUrl);
-            console.log('Form data:', {
-                user_id: document.getElementById('user_id').value,
-                page: document.getElementById('page').value,
-                action: document.getElementById('action').value
-            });
 
             fetch(submitUrl, {
                 method: 'POST',
                 body: formData
             })
                 .then(response => {
-                    console.log('Submit response status:', response.status);
+                    if (response.status === 403) {
+                        throw new Error('You do not have permission to create user actions');
+                    }
                     if (!response.ok) {
                         return response.text().then(text => {
                             throw new Error(`HTTP ${response.status}: ${text}`);
@@ -606,10 +682,11 @@
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Submit response data:', data);
                     if (data.success) {
                         showToast('User action created successfully!', 'success');
-                        createActionModal.hide();
+                        if (createActionModal) {
+                            createActionModal.hide();
+                        }
 
                         // Reload only the table content instead of the whole page
                         setTimeout(() => {
@@ -621,7 +698,7 @@
                 })
                 .catch(error => {
                     console.error('Error submitting form:', error);
-                    showToast('Network error occurred: ' + error.message, 'danger');
+                    showToast('Error: ' + error.message, 'danger');
                 })
                 .finally(() => {
                     submitBtn.disabled = false;
@@ -680,6 +757,11 @@
 
         // Global delete function
         window.deleteAction = function (id) {
+            if (!userPermissions.canDelete) {
+                showToast('You do not have permission to delete user actions', 'danger');
+                return;
+            }
+
             currentDeleteId = id;
             if (deleteActionModal) {
                 deleteActionModal.show();
@@ -687,6 +769,11 @@
         };
 
         function performDelete(id) {
+            if (!userPermissions.canDelete) {
+                showToast('You do not have permission to delete user actions', 'danger');
+                return;
+            }
+
             const submitBtn = document.getElementById('confirmDeleteBtn');
             const originalText = submitBtn.innerHTML;
 
@@ -700,11 +787,18 @@
                 },
                 body: JSON.stringify({ id: id })
             })
-                .then(response => response.json())
+                .then(response => {
+                    if (response.status === 403) {
+                        throw new Error('You do not have permission to delete user actions');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         showToast('User action deleted successfully!', 'success');
-                        deleteActionModal.hide();
+                        if (deleteActionModal) {
+                            deleteActionModal.hide();
+                        }
 
                         // Reload only the table content instead of the whole page
                         setTimeout(() => {
@@ -716,7 +810,7 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    showToast('Network error occurred', 'danger');
+                    showToast('Error: ' + error.message, 'danger');
                 })
                 .finally(() => {
                     submitBtn.disabled = false;
@@ -760,5 +854,7 @@
         }
     });
 </script>
+
+<?php endif; ?>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>

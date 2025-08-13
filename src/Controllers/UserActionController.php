@@ -42,6 +42,24 @@ if (!class_exists('App\Controllers\UserActionController')) {
         }
 
         /**
+         * Check if current user has permission for a specific action
+         */
+        public function hasPermission(string $page, string $action): bool
+        {
+            // Admin users have all permissions
+            if (($_SESSION['user_level'] ?? 0) === 1) {
+                return true;
+            }
+
+            if (!isset($_SESSION['user_id'])) {
+                return false;
+            }
+
+            $userId = (int) $_SESSION['user_id'];
+            return $this->userActionModel->hasPermission($userId, $page, $action);
+        }
+
+        /**
          * Check if current user has permission to access a route
          */
         public function checkRoutePermission(string $route): bool
@@ -235,14 +253,19 @@ if (!class_exists('App\Controllers\UserActionController')) {
 
                 $availableUsers = $isAdmin ? $this->userActionModel->getUsers() : [];
 
-                $canEdit = $isAdmin;    // Customize as needed
-                $canDelete = $isAdmin;  // Customize as needed
+                // Permission checks for UI elements
+                $canCreate = $this->hasPermission('Roles', 'create');
+                $canView = $this->hasPermission('Roles', 'view');
+                $canDelete = $this->hasPermission('Roles', 'delete');
 
                 require __DIR__ . '/../../views/user-actions/index.php';
             } catch (Exception $e) {
                 error_log("UserActionController::showActivityLogs() - " . $e->getMessage());
                 http_response_code(403);
-                echo "Access denied: " . $e->getMessage();
+
+                // Show access denied page instead of plain text
+                $errorMessage = "Access denied: " . $e->getMessage();
+                require __DIR__ . '/../../views/errors/403.php';
             }
         }
 
