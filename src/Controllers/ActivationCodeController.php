@@ -2,17 +2,54 @@
 
 namespace App\Controllers;
 
+use PDO;
+use Exception;
+
 class ActivationCodeController
 {
-    private $pdo;
+    private PDO $pdo;
+    private $userActionController;
 
-    public function __construct(\PDO $pdo)
+    public function __construct(PDO $pdo)
     {
         $this->pdo = $pdo;
+        // Initialize UserActionController for permission checking
+        require_once __DIR__ . '/UserActionController.php';
+        $this->userActionController = new UserActionController($pdo);
+    }
+
+    /**
+     * Check if current user has permission for a specific action
+     */
+    private function hasPermission(string $page, string $action): bool
+    {
+        // Admin users have all permissions
+        if (($_SESSION['user_level'] ?? 0) === 1) {
+            return true;
+        }
+
+        if (!isset($_SESSION['user_id'])) {
+            return false;
+        }
+
+        $userId = (int) $_SESSION['user_id'];
+
+        // Use the UserAction model to check permissions
+        require_once __DIR__ . '/../Models/UserAction.php';
+        $userActionModel = new \App\Models\UserAction($this->pdo);
+
+        return $userActionModel->hasPermission($userId, $page, $action);
     }
 
     public function index()
     {
+        // Check if user has permission to view licenses
+        if (!$this->hasPermission('License Manager', 'view')) {
+            http_response_code(403);
+            echo "Access denied. You don't have permission to view licenses.";
+            return;
+        }
+
         // Get pagination parameters
         $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
         $perPage = 10;
@@ -81,7 +118,7 @@ class ActivationCodeController
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($mainParams);
-        $codes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $codes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Calculate pagination
         $totalPages = ceil($total / $perPage);
@@ -94,22 +131,36 @@ class ActivationCodeController
             'has_next' => $page < $totalPages
         ];
 
-
-
+        // Pass permissions to the view
+        $canCreate = $this->hasPermission('License Manager', 'create');
+        $canUpdate = $this->hasPermission('License Manager', 'update');
+        $canDelete = $this->hasPermission('License Manager', 'delete');
+        $canAddPayment = $this->hasPermission('License Manager', 'add payment');
 
         // Load view
         require __DIR__ . '/../../views/activation_codes/index.php';
-
     }
 
     public function create()
     {
+        if (!$this->hasPermission('License Manager', 'create')) {
+            http_response_code(403);
+            echo "Access denied. You don't have permission to create licenses.";
+            return;
+        }
+
         require __DIR__ . '/../../views/activation_codes/create.php';
     }
 
     public function store()
     {
         header('Content-Type: application/json');
+
+        if (!$this->hasPermission('License Manager', 'create')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Access denied']);
+            return;
+        }
 
         $errors = [];
         $fullName = trim($_POST['name'] ?? '');
@@ -174,19 +225,22 @@ class ActivationCodeController
         exit;
     }
 
-
-
     public function edit($id)
     {
+        if (!$this->hasPermission('License Manager', 'update')) {
+            http_response_code(403);
+            echo "Access denied. You don't have permission to edit licenses.";
+            return;
+        }
+
         $stmt = $this->pdo->prepare("SELECT * FROM projects_list WHERE id = ?");
         $stmt->execute([$id]);
-        $code = $stmt->fetch(\PDO::FETCH_ASSOC);
+        $code = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$code) {
             $_SESSION['errors'] = ['License not found'];
             header('Location: ' . url('activation-codes'));
             exit;
-
         }
 
         require __DIR__ . '/../../views/activation_codes/edit.php';
@@ -194,6 +248,12 @@ class ActivationCodeController
 
     public function update($id)
     {
+        if (!$this->hasPermission('License Manager', 'update')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Access denied']);
+            return;
+        }
+
         // Validate input
         $errors = [];
         $fullName = trim($_POST['name'] ?? '');
@@ -264,15 +324,20 @@ class ActivationCodeController
         $_SESSION['errors'] = $errors;
         header('Location: ' . url('activation-codes/edit?id=' . urlencode($id)));
         exit;
-
     }
 
     public function delete($id)
     {
+        if (!$this->hasPermission('License Manager', 'delete')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Access denied']);
+            return;
+        }
+
         try {
             $stmt = $this->pdo->prepare("SELECT name FROM projects_list WHERE id = ?");
             $stmt->execute([$id]);
-            $license = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $license = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$license) {
                 $_SESSION['errors'] = ['License not found'];
@@ -294,10 +359,14 @@ class ActivationCodeController
         exit;
     }
 
-
-
     public function export()
     {
+        if (!$this->hasPermission('License Manager', 'view')) {
+            http_response_code(403);
+            echo "Access denied. You don't have permission to export licenses.";
+            return;
+        }
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . url('activation-codes'));
             exit;
@@ -342,7 +411,7 @@ class ActivationCodeController
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
-            $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             if ($format === 'csv') {
                 $this->exportCSV($data);
@@ -492,7 +561,7 @@ class ActivationCodeController
                 ORDER BY updated_at DESC 
                 LIMIT 5
             ");
-            $stats['recent'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            $stats['recent'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Expiring details for alerts
             $stmt = $this->pdo->query("
@@ -503,7 +572,7 @@ class ActivationCodeController
                 ORDER BY valid_to ASC
                 LIMIT 10
             ");
-            $stats['expiring_details'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            $stats['expiring_details'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         } catch (\PDOException $e) {
             // Return default values if database error
@@ -519,6 +588,7 @@ class ActivationCodeController
 
         return $stats;
     }
+
     private function getMonthlyLicenseData()
     {
         $data = [
@@ -550,7 +620,7 @@ class ActivationCodeController
         ";
 
             $stmt = $this->pdo->query($newLicensesQuery);
-            $newLicenses = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            $newLicenses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Get expired licenses per month
             $expiredLicensesQuery = "
@@ -566,7 +636,7 @@ class ActivationCodeController
         ";
 
             $stmt = $this->pdo->query($expiredLicensesQuery);
-            $expiredLicenses = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            $expiredLicenses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Initialize with zeros using month numbers as keys
             foreach ($monthNumbers as $num) {
@@ -613,14 +683,16 @@ class ActivationCodeController
 
         $stmt = $this->pdo->query($sql);
         return $stmt->fetchColumn();
-
-
     }
-
-
 
     public function datatable()
     {
+        if (!$this->hasPermission('License Manager', 'view')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Access denied']);
+            return;
+        }
+
         // Get request parameters
         $draw = $_POST['draw'] ?? 1;
         $start = $_POST['start'] ?? 0;
@@ -705,23 +777,40 @@ class ActivationCodeController
 
         $stmt = $this->pdo->prepare($query);
         $stmt->execute($params);
-        $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Get permissions for frontend
+        $canUpdate = $this->hasPermission('License Manager', 'update');
+        $canDelete = $this->hasPermission('License Manager', 'delete');
+        $canAddPayment = $this->hasPermission('License Manager', 'add payment');
 
         // Format the response
         $response = [
             "draw" => intval($draw),
             "recordsTotal" => intval($totalRecords),
             "recordsFiltered" => intval($filteredRecords),
-            "data" => $data
+            "data" => $data,
+            "permissions" => [
+                'canUpdate' => $canUpdate,
+                'canDelete' => $canDelete,
+                'canAddPayment' => $canAddPayment
+            ]
         ];
 
         header('Content-Type: application/json');
         echo json_encode($response);
         exit;
     }
+
     public function bulkUpdate()
     {
         header('Content-Type: application/json');
+
+        if (!$this->hasPermission('License Manager', 'update')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Access denied']);
+            return;
+        }
 
         try {
             $ids = $_POST['ids'] ?? [];
@@ -761,6 +850,12 @@ class ActivationCodeController
     {
         header('Content-Type: application/json');
 
+        if (!$this->hasPermission('License Manager', 'delete')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Access denied']);
+            return;
+        }
+
         try {
             $ids = $_POST['ids'] ?? [];
 
@@ -788,6 +883,7 @@ class ActivationCodeController
         }
         exit;
     }
+
     private function logActivity(string $actionType, ?int $licenseId = null, array $requestData = []): bool
     {
         if (!$this->isAuthenticated()) {

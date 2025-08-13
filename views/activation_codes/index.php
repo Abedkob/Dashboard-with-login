@@ -105,14 +105,16 @@
         </div>
         <h1 class="h2 mb-0 text-dark fw-bold">License Manager</h1>
     </div>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <div class="btn-group me-2">
-            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
-                data-bs-target="#addLicenseModal">
-                <i class="fas fa-plus me-2"></i>Add New License
-            </button>
+    <?php if ($canCreate): ?>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
+                    data-bs-target="#addLicenseModal">
+                    <i class="fas fa-plus me-2"></i>Add New License
+                </button>
+            </div>
         </div>
-    </div>
+    <?php endif; ?>
 </div>
 
 <!-- Success Alert -->
@@ -125,114 +127,122 @@
     <?php unset($_SESSION['success']); ?>
 <?php endif; ?>
 
-<!-- Add License Modal -->
-<div class="modal fade" id="addLicenseModal" tabindex="-1" aria-labelledby="addLicenseModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addLicenseModalLabel">
-                    <i class="fas fa-plus-circle me-2"></i>Add New License
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="addLicenseModalBody">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+<?php if ($canCreate): ?>
+    <!-- Add License Modal -->
+    <div class="modal fade" id="addLicenseModal" tabindex="-1" aria-labelledby="addLicenseModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addLicenseModalLabel">
+                        <i class="fas fa-plus-circle me-2"></i>Add New License
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="addLicenseModalBody">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading license form...</p>
                     </div>
-                    <p class="mt-2">Loading license form...</p>
                 </div>
             </div>
         </div>
     </div>
-</div>
+<?php endif; ?>
 
-<!-- Edit License Modal -->
-<div class="modal fade" id="editLicenseModal" tabindex="-1" aria-labelledby="editLicenseModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editLicenseModalLabel">
-                    <i class="fas fa-edit me-2"></i>Edit License
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="editLicenseModalBody">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+<?php if ($canUpdate): ?>
+    <!-- Edit License Modal -->
+    <div class="modal fade" id="editLicenseModal" tabindex="-1" aria-labelledby="editLicenseModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editLicenseModalLabel">
+                        <i class="fas fa-edit me-2"></i>Edit License
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="editLicenseModalBody">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading license details...</p>
                     </div>
-                    <p class="mt-2">Loading license details...</p>
                 </div>
             </div>
         </div>
     </div>
-</div>
+<?php endif; ?>
 
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteLicenseModal" tabindex="-1" aria-labelledby="deleteLicenseModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-md modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteLicenseModalLabel" style="color:black">
-                    <i style="color: orange;" class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                    aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center">
-                <div class="delete-modal-icon mb-3 fs-1 text-danger">
-                    <i class="fas fa-trash-alt"></i>
+<?php if ($canDelete): ?>
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteLicenseModal" tabindex="-1" aria-labelledby="deleteLicenseModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-md modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteLicenseModalLabel" style="color:black">
+                        <i style="color: orange;" class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
-                <h5 class="text-dark">Are you sure you want to delete this license?</h5>
-                <p class="text-muted">This action cannot be undone. All data associated with this license will be
-                    permanently removed.</p>
-                <div class="license-info bg-white border p-3 rounded mt-3 mb-3 shadow-sm">
-                    <p class="mb-1"><strong>License ID:</strong> <span id="deleteLicenseId"></span></p>
-                    <p class="mb-1"><strong>Name:</strong> <span id="deleteLicenseName"></span></p>
-                    <p class="mb-0"><strong>Key:</strong> <span id="deleteLicenseKey"></span></p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-                    <i class="fas fa-trash-alt me-2"></i>Delete License
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add Payment For License Modal -->
-<div class="modal fade" id="addPaymentForLicenseModal" tabindex="-1" aria-labelledby="addPaymentForLicenseModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addPaymentForLicenseModalLabel">
-                    <i class="fas fa-dollar-sign me-2"></i>Add Payment for License <span id="modalLicenseName"
-                        class="text-primary"></span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="addPaymentForLicenseModalBody">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                <div class="modal-body text-center">
+                    <div class="delete-modal-icon mb-3 fs-1 text-danger">
+                        <i class="fas fa-trash-alt"></i>
                     </div>
-                    <p class="mt-2">Loading payment form...</p>
+                    <h5 class="text-dark">Are you sure you want to delete this license?</h5>
+                    <p class="text-muted">This action cannot be undone. All data associated with this license will be
+                        permanently removed.</p>
+                    <div class="license-info bg-white border p-3 rounded mt-3 mb-3 shadow-sm">
+                        <p class="mb-1"><strong>License ID:</strong> <span id="deleteLicenseId"></span></p>
+                        <p class="mb-1"><strong>Name:</strong> <span id="deleteLicenseName"></span></p>
+                        <p class="mb-0"><strong>Key:</strong> <span id="deleteLicenseKey"></span></p>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-success" id="submitPaymentForLicense">Save Payment</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="fas fa-trash-alt me-2"></i>Delete License
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
+<?php endif; ?>
+
+<?php if ($canAddPayment): ?>
+    <!-- Add Payment For License Modal -->
+    <div class="modal fade" id="addPaymentForLicenseModal" tabindex="-1" aria-labelledby="addPaymentForLicenseModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addPaymentForLicenseModalLabel">
+                        <i class="fas fa-dollar-sign me-2"></i>Add Payment for License <span id="modalLicenseName"
+                            class="text-primary"></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="addPaymentForLicenseModalBody">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading payment form...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" id="submitPaymentForLicense">Save Payment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
 
 <!-- License Table -->
 <div class="card shadow-sm">
@@ -306,12 +316,20 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
 
 <script>
+    // Pass PHP permissions to JavaScript
+    const userPermissions = {
+        canCreate: <?= json_encode($canCreate) ?>,
+        canUpdate: <?= json_encode($canUpdate) ?>,
+        canDelete: <?= json_encode($canDelete) ?>,
+        canAddPayment: <?= json_encode($canAddPayment) ?>
+    };
+
     $(document).ready(function () {
-        // Initialize modals
-        let addLicenseModal = new bootstrap.Modal(document.getElementById('addLicenseModal'));
-        let editLicenseModal = new bootstrap.Modal(document.getElementById('editLicenseModal'));
-        let deleteLicenseModal = new bootstrap.Modal(document.getElementById('deleteLicenseModal'));
-        let addPaymentForLicenseModal = new bootstrap.Modal(document.getElementById('addPaymentForLicenseModal'));
+        // Initialize modals only if user has permissions
+        let addLicenseModal = userPermissions.canCreate ? new bootstrap.Modal(document.getElementById('addLicenseModal')) : null;
+        let editLicenseModal = userPermissions.canUpdate ? new bootstrap.Modal(document.getElementById('editLicenseModal')) : null;
+        let deleteLicenseModal = userPermissions.canDelete ? new bootstrap.Modal(document.getElementById('deleteLicenseModal')) : null;
+        let addPaymentForLicenseModal = userPermissions.canAddPayment ? new bootstrap.Modal(document.getElementById('addPaymentForLicenseModal')) : null;
 
         let currentLicenseId = null;
         let table = null;
@@ -427,19 +445,35 @@
                     className: 'text-center',
                     render: function (data, type, row) {
                         if (type === 'display') {
+                            let buttons = [];
+
+                            if (userPermissions.canUpdate) {
+                                buttons.push(`<button type="button" class="btn btn-outline-primary"
+                                             onclick="showEditModal(${data})" title="Edit License">
+                                            <i class="fas fa-edit"></i>
+                                        </button>`);
+                            }
+
+                            if (userPermissions.canDelete) {
+                                buttons.push(`<button type="button" class="btn btn-outline-danger"
+                                             onclick="showDeleteModal(${data}, '${row.name}', '${row.license}')" title="Delete License">
+                                            <i class="fas fa-trash"></i>
+                                        </button>`);
+                            }
+
+                            if (userPermissions.canAddPayment) {
+                                buttons.push(`<button type="button" class="btn btn-outline-success"
+                                             onclick="showAddPaymentForLicenseModal(${data}, '${row.name}')" title="Add Payment for License">
+                                            <i class="fas fa-dollar-sign"></i>
+                                        </button>`);
+                            }
+
+                            if (buttons.length === 0) {
+                                return '<span class="text-muted">No actions available</span>';
+                            }
+
                             return `<div class="btn-group btn-group-sm" role="group">
-                                <button type="button" class="btn btn-outline-primary"
-                                         onclick="showEditModal(${data})" title="Edit License">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button type="button" class="btn btn-outline-danger"
-                                         onclick="showDeleteModal(${data}, '${row.name}', '${row.license}')" title="Delete License">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                                <button type="button" class="btn btn-outline-success"
-                                         onclick="showAddPaymentForLicenseModal(${data}, '${row.name}')" title="Add Payment for License">
-                                    <i class="fas fa-dollar-sign"></i>
-                                </button>
+                                ${buttons.join('')}
                             </div>`;
                         }
                         return data;
@@ -481,27 +515,26 @@
             }
         });
 
-        // Load add license form when modal is shown
-        $('#addLicenseModal').on('show.bs.modal', function () {
-            loadAddLicenseForm();
-        });
+        // Load add license form when modal is shown (only if user has permission)
+        if (userPermissions.canCreate) {
+            $('#addLicenseModal').on('show.bs.modal', function () {
+                loadAddLicenseForm();
+            });
 
-        // Clean up modal when hidden
-        $('#addLicenseModal').on('hidden.bs.modal', function () {
-            // Remove any remaining backdrop
-            $('.modal-backdrop').remove();
-            $('body').removeClass('modal-open').css('padding-right', '');
-
-            // Reset modal content
-            $('#addLicenseModalBody').html(`
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
+            // Clean up modal when hidden
+            $('#addLicenseModal').on('hidden.bs.modal', function () {
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open').css('padding-right', '');
+                $('#addLicenseModalBody').html(`
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading license form...</p>
                 </div>
-                <p class="mt-2">Loading license form...</p>
-            </div>
-        `);
-        });
+            `);
+            });
+        }
 
         // Status filter handler
         $('.status-filter').on('click', function (e) {
@@ -521,20 +554,26 @@
             });
         });
 
-        // Confirm delete button handler
-        $('#confirmDeleteBtn').on('click', function () {
-            deleteLicense(currentLicenseId);
-            deleteLicenseModal.hide();
-        });
+        // Confirm delete button handler (only if user has permission)
+        if (userPermissions.canDelete) {
+            $('#confirmDeleteBtn').on('click', function () {
+                deleteLicense(currentLicenseId);
+                deleteLicenseModal.hide();
+            });
+        }
 
-        // Payment for license modal submit
-        $(document).on('click', '#submitPaymentForLicense', function (e) {
-            e.preventDefault();
-            submitPaymentForLicenseForm();
-        });
+        // Payment for license modal submit (only if user has permission)
+        if (userPermissions.canAddPayment) {
+            $(document).on('click', '#submitPaymentForLicense', function (e) {
+                e.preventDefault();
+                submitPaymentForLicenseForm();
+            });
+        }
 
-        // Functions
+        // Functions (only define if user has permissions)
         function loadAddLicenseForm() {
+            if (!userPermissions.canCreate) return;
+
             $('#addLicenseModalBody').html(`
             <div class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
@@ -557,6 +596,8 @@
         }
 
         function initLicenseForm() {
+            if (!userPermissions.canCreate) return;
+
             $('#licenseForm').off('submit').on('submit', function (e) {
                 e.preventDefault();
                 submitLicenseForm();
@@ -572,6 +613,8 @@
         }
 
         function submitLicenseForm() {
+            if (!userPermissions.canCreate) return;
+
             const $submitBtn = $('#licenseForm button[type="submit"]');
             const originalText = $submitBtn.html();
 
@@ -587,16 +630,11 @@
                     if (response.success) {
                         showToast('✅ License created successfully!', 'success');
                         table.ajax.reload(null, false);
-
-                        // Properly close modal and clean up
                         addLicenseModal.hide();
-
-                        // Force cleanup after a short delay
                         setTimeout(function () {
                             $('.modal-backdrop').remove();
                             $('body').removeClass('modal-open').css('padding-right', '');
                         }, 300);
-
                     } else {
                         if (response.errors) {
                             let errorHtml = '<ul>';
@@ -620,7 +658,13 @@
             });
         }
 
+        // Global functions (with permission checks)
         window.showEditModal = function (id) {
+            if (!userPermissions.canUpdate) {
+                showToast('You do not have permission to edit licenses', 'warning');
+                return;
+            }
+
             currentLicenseId = id;
             $('#editLicenseModalBody').html(`
             <div class="text-center py-5">
@@ -647,7 +691,60 @@
                 });
         };
 
+        window.showDeleteModal = function (id, name, license) {
+            if (!userPermissions.canDelete) {
+                showToast('You do not have permission to delete licenses', 'warning');
+                return;
+            }
+
+            currentLicenseId = id;
+            $('#deleteLicenseId').text(id);
+            $('#deleteLicenseName').text(name);
+            $('#deleteLicenseKey').text(license.substring(0, 12) + '...');
+            deleteLicenseModal.show();
+        };
+
+        window.showAddPaymentForLicenseModal = function (licenseId, licenseName) {
+            if (!userPermissions.canAddPayment) {
+                showToast('You do not have permission to add payments', 'warning');
+                return;
+            }
+
+            currentLicenseId = licenseId;
+            $('#modalLicenseName').text(`(License ID: ${licenseId})`);
+            $('#addPaymentForLicenseModalBody').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading payment form...</p>
+            </div>
+        `);
+
+            addPaymentForLicenseModal.show();
+
+            $.get(`<?= BASE_URL ?>/payments-manager/create-payment-for-license-form?license_id=${licenseId}&license_name=${encodeURIComponent(licenseName)}`, function (data) {
+                $('#addPaymentForLicenseModalBody').html(data);
+                initPaymentForLicenseForm();
+            }).fail(function () {
+                $('#addPaymentForLicenseModalBody').html(`
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Failed to load payment form. Please try again.
+                </div>
+            `);
+            });
+        };
+
+        window.copyToClipboard = function (text) {
+            navigator.clipboard.writeText(text).then(function () {
+                showToast('License key copied to clipboard!', 'success');
+            });
+        };
+
         function attachEditFormHandler() {
+            if (!userPermissions.canUpdate) return;
+
             $('#editLicenseForm').off('submit').on('submit', function (e) {
                 e.preventDefault();
                 const form = $(this);
@@ -705,21 +802,9 @@
             });
         }
 
-        window.showDeleteModal = function (id, name, license) {
-            currentLicenseId = id;
-            $('#deleteLicenseId').text(id);
-            $('#deleteLicenseName').text(name);
-            $('#deleteLicenseKey').text(license.substring(0, 12) + '...');
-            deleteLicenseModal.show();
-        };
-
-        window.copyToClipboard = function (text) {
-            navigator.clipboard.writeText(text).then(function () {
-                showToast('License key copied to clipboard!', 'success');
-            });
-        };
-
         function deleteLicense(id) {
+            if (!userPermissions.canDelete) return;
+
             $.ajax({
                 url: '<?= BASE_URL ?>/activation-codes/delete?id=' + id,
                 type: 'POST',
@@ -736,34 +821,9 @@
             });
         }
 
-        window.showAddPaymentForLicenseModal = function (licenseId, licenseName) {
-            currentLicenseId = licenseId;
-            $('#modalLicenseName').text(`(License ID: ${licenseId})`);
-            $('#addPaymentForLicenseModalBody').html(`
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2">Loading payment form...</p>
-            </div>
-        `);
-
-            addPaymentForLicenseModal.show();
-
-            $.get(`<?= BASE_URL ?>/payments-manager/create-payment-for-license-form?license_id=${licenseId}&license_name=${encodeURIComponent(licenseName)}`, function (data) {
-                $('#addPaymentForLicenseModalBody').html(data);
-                initPaymentForLicenseForm();
-            }).fail(function () {
-                $('#addPaymentForLicenseModalBody').html(`
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    Failed to load payment form. Please try again.
-                </div>
-            `);
-            });
-        };
-
         function initPaymentForLicenseForm() {
+            if (!userPermissions.canAddPayment) return;
+
             const today = new Date().toISOString().split('T')[0];
             $('#addPaymentForLicenseForm #payment_date').val(today);
 
@@ -777,6 +837,8 @@
         }
 
         function submitPaymentForLicenseForm() {
+            if (!userPermissions.canAddPayment) return;
+
             const form = $('#addPaymentForLicenseForm');
             const formData = {
                 license_id: form.find('input[name="license_id"]').val(),
