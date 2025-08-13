@@ -17,6 +17,22 @@ require_once __DIR__ . '/../../public/config.php'; ?>
         font-weight: 600;
     }
 
+    .license-key {
+        font-family: 'Courier New', monospace;
+        background: #f8f9fa;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+
+    .bulk-actions {
+        background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+        border: 1px solid #e1bee7;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
     .card-header {
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         border-bottom: 1px solid #dee2e6;
@@ -32,10 +48,31 @@ require_once __DIR__ . '/../../public/config.php'; ?>
         font-size: 0.875rem;
     }
 
+    .search-container {
+        position: relative;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+
+    .search-input {
+        padding-left: 2.5rem;
+    }
+
     @media (max-width: 768px) {
         .btn-toolbar {
             flex-direction: column;
             gap: 0.5rem;
+        }
+
+        .bulk-actions .row {
+            flex-direction: column;
+            gap: 1rem;
         }
     }
 
@@ -78,10 +115,16 @@ require_once __DIR__ . '/../../public/config.php'; ?>
     </div>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
+            <?php if ($canCreate ?? false): ?>
             <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal"
                 data-bs-target="#addPaymentModal">
                 <i class="fas fa-plus me-2"></i>Add New Payment
             </button>
+            <?php else: ?>
+            <button type="button" class="btn btn-secondary shadow-sm" disabled title="You don't have permission to create payments">
+                <i class="fas fa-lock me-2"></i>Add New Payment
+            </button>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -94,6 +137,8 @@ require_once __DIR__ . '/../../public/config.php'; ?>
     </div>
     <?php unset($_SESSION['success']); ?>
 <?php endif; ?>
+
+<?php if ($canCreate ?? false): ?>
 <!-- Add Payment Modal -->
 <div class="modal fade" id="addPaymentModal" tabindex="-1" aria-labelledby="addPaymentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -119,6 +164,9 @@ require_once __DIR__ . '/../../public/config.php'; ?>
         </div>
     </div>
 </div>
+<?php endif; ?>
+
+<?php if ($canUpdate ?? false): ?>
 <!-- Edit Payment Modal -->
 <div class="modal fade" id="editPaymentModal" tabindex="-1" aria-labelledby="editPaymentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -144,6 +192,9 @@ require_once __DIR__ . '/../../public/config.php'; ?>
         </div>
     </div>
 </div>
+<?php endif; ?>
+
+<?php if ($canDelete ?? false): ?>
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deletePaymentModal" tabindex="-1" aria-labelledby="deletePaymentModalLabel"
     aria-hidden="true">
@@ -180,6 +231,34 @@ require_once __DIR__ . '/../../public/config.php'; ?>
         </div>
     </div>
 </div>
+<?php endif; ?>
+
+<!-- Add Payment For License Modal -->
+<div class="modal fade" id="addPaymentForLicenseModal" tabindex="-1" aria-labelledby="addPaymentForLicenseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addPaymentForLicenseModalLabel">
+                    <i class="fas fa-dollar-sign me-2"></i>Add Payment for License <span id="modalLicenseName" class="text-primary"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="addPaymentForLicenseModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading payment form...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" id="submitPaymentForLicense">Save Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Payments Table -->
 <div class="card shadow-sm">
     <div class="card-header">
@@ -241,6 +320,7 @@ require_once __DIR__ . '/../../public/config.php'; ?>
 <!-- DataTables CSS -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/select/1.3.4/css/select.bootstrap5.min.css">
 <!-- DataTables JS -->
 <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
@@ -248,17 +328,31 @@ require_once __DIR__ . '/../../public/config.php'; ?>
 <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.bootstrap5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/select/1.3.4/js/dataTables.select.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
 <script>
     // Global variables
     let paymentsTable;
     let currentPaymentId = null;
     let addPaymentModal, editPaymentModal, deletePaymentModal;
+    
+    // Permission variables from PHP
+    const permissions = {
+        canCreate: <?= json_encode($canCreate ?? false) ?>,
+        canUpdate: <?= json_encode($canUpdate ?? false) ?>,
+        canDelete: <?= json_encode($canDelete ?? false) ?>
+    };
 
     // Define the submission function in global scope
     window.submitEditPaymentForm = function () {
+        if (!permissions.canUpdate) {
+            showToast('You do not have permission to update payments', 'danger');
+            return;
+        }
+        
         const formData = $('#editPaymentForm').serialize();
         const paymentId = $('input[name="payment_id"]').val();
         const $button = $('#submitEditPayment');
@@ -304,10 +398,17 @@ require_once __DIR__ . '/../../public/config.php'; ?>
     };
 
     $(document).ready(function () {
-        // Initialize modals
-        addPaymentModal = new bootstrap.Modal(document.getElementById('addPaymentModal'));
-        editPaymentModal = new bootstrap.Modal(document.getElementById('editPaymentModal'));
-        deletePaymentModal = new bootstrap.Modal(document.getElementById('deletePaymentModal'));
+        // Initialize modals only if user has permissions
+        if (permissions.canCreate) {
+            addPaymentModal = new bootstrap.Modal(document.getElementById('addPaymentModal'));
+        }
+        if (permissions.canUpdate) {
+            editPaymentModal = new bootstrap.Modal(document.getElementById('editPaymentModal'));
+        }
+        if (permissions.canDelete) {
+            deletePaymentModal = new bootstrap.Modal(document.getElementById('deletePaymentModal'));
+        }
+        
         // Initialize DataTable
         initializeDataTable();
         // Load client filter options
@@ -325,6 +426,14 @@ require_once __DIR__ . '/../../public/config.php'; ?>
                 data: function (d) {
                     const selectedClient = $('.client-filter.active').data('client') || '';
                     d.client_filter = selectedClient;
+                },
+                dataSrc: function(json) {
+                    // Update permissions from server response
+                    if (json.permissions) {
+                        permissions.canUpdate = json.permissions.canUpdate;
+                        permissions.canDelete = json.permissions.canDelete;
+                    }
+                    return json.data;
                 }
             },
             columns: [
@@ -394,16 +503,27 @@ require_once __DIR__ . '/../../public/config.php'; ?>
                     orderable: false,
                     className: 'text-center',
                     render: function (data, type, row) {
-                        return `<div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-primary"
-                            onclick="showEditModal(${data})" title="Edit Payment">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-danger"
-                            onclick="showDeleteModal(${data}, '${row.client_name || 'N/A'}', '${row.amount}')" title="Delete Payment">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>`;
+                        let actions = [];
+                        
+                        if (permissions.canUpdate) {
+                            actions.push(`<button type="button" class="btn btn-outline-primary"
+                                onclick="showEditModal(${data})" title="Edit Payment">
+                                <i class="fas fa-edit"></i>
+                            </button>`);
+                        }
+                        
+                        if (permissions.canDelete) {
+                            actions.push(`<button type="button" class="btn btn-outline-danger"
+                                onclick="showDeleteModal(${data}, '${row.client_name || 'N/A'}', '${row.amount}')" title="Delete Payment">
+                                <i class="fas fa-trash"></i>
+                            </button>`);
+                        }
+                        
+                        if (actions.length === 0) {
+                            return '<span class="text-muted">No actions available</span>';
+                        }
+                        
+                        return `<div class="btn-group btn-group-sm" role="group">${actions.join('')}</div>`;
                     }
                 }
             ],
@@ -461,6 +581,11 @@ require_once __DIR__ . '/../../public/config.php'; ?>
     }
 
     function loadAddPaymentForm() {
+        if (!permissions.canCreate) {
+            showToast('You do not have permission to create payments', 'danger');
+            return;
+        }
+        
         $('#addPaymentModalBody').html(`
         <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
@@ -489,12 +614,20 @@ require_once __DIR__ . '/../../public/config.php'; ?>
         // Form submission for add (delegated)
         $(document).on('click', '#submitPayment', function (e) {
             e.preventDefault();
+            if (!permissions.canCreate) {
+                showToast('You do not have permission to create payments', 'danger');
+                return;
+            }
             $('#addPaymentForm').trigger('submit');
         });
 
         // Edit Payment Form Submit Trigger (delegated)
         $(document).on('click', '#submitEditPayment', function (e) {
             e.preventDefault();
+            if (!permissions.canUpdate) {
+                showToast('You do not have permission to update payments', 'danger');
+                return;
+            }
             // Trigger the form's submit event, which will be caught by the delegated handler below
             $('#editPaymentForm').trigger('submit');
         });
@@ -539,6 +672,10 @@ require_once __DIR__ . '/../../public/config.php'; ?>
 
         // Confirm delete button handler
         $('#confirmDeleteBtn').on('click', function () {
+            if (!permissions.canDelete) {
+                showToast('You do not have permission to delete payments', 'danger');
+                return;
+            }
             deletePayment(currentPaymentId);
             deletePaymentModal.hide();
         });
@@ -555,7 +692,10 @@ require_once __DIR__ . '/../../public/config.php'; ?>
             </div>
             `);
         });
-        $('#addPaymentModal').on('show.bs.modal', loadAddPaymentForm);
+        
+        if (permissions.canCreate) {
+            $('#addPaymentModal').on('show.bs.modal', loadAddPaymentForm);
+        }
     }
 
     function loadClientFilterOptions() {
@@ -579,6 +719,11 @@ require_once __DIR__ . '/../../public/config.php'; ?>
     }
 
     function showEditModal(id) {
+        if (!permissions.canUpdate) {
+            showToast('You do not have permission to edit payments', 'danger');
+            return;
+        }
+        
         currentPaymentId = id;
         $('#editPaymentModalBody').html(`
         <div class="text-center py-5">
@@ -613,6 +758,11 @@ require_once __DIR__ . '/../../public/config.php'; ?>
     }
 
     function showDeleteModal(id, client, amount) {
+        if (!permissions.canDelete) {
+            showToast('You do not have permission to delete payments', 'danger');
+            return;
+        }
+        
         currentPaymentId = id;
         $('#deletePaymentId').text(id);
         $('#deletePaymentClient').text(client);
@@ -621,6 +771,11 @@ require_once __DIR__ . '/../../public/config.php'; ?>
     }
 
     function deletePayment(id) {
+        if (!permissions.canDelete) {
+            showToast('You do not have permission to delete payments', 'danger');
+            return;
+        }
+        
         $.ajax({
             url: `<?= BASE_URL ?>/payments-manager/delete`,
             type: 'POST',

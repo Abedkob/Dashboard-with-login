@@ -3,23 +3,75 @@
 namespace App\Controllers;
 
 require_once __DIR__ . '/../Models/Payment.php';
+require_once __DIR__ . '/../Models/UserAction.php';
 
 use App\Models\Payment;
+use App\Models\UserAction;
 use PDO;
 use Exception; // Import Exception class
 
 class PaymentsController
 {
     private Payment $paymentModel;
+    private UserAction $userActionModel;
 
     public function __construct(PDO $db)
     {
         $this->paymentModel = new Payment($db);
+        $this->userActionModel = new UserAction($db);
+    }
+
+    /**
+     * Check if current user has permission for a specific action
+     */
+    private function hasPermission(string $page, string $action): bool
+    {
+        // Admin users have all permissions
+        if (($_SESSION['user_level'] ?? 0) === 1) {
+            return true;
+        }
+
+        // Check if user is authenticated
+        if (!isset($_SESSION['user_id'])) {
+            return false;
+        }
+
+        $userId = (int) $_SESSION['user_id'];
+        return $this->userActionModel->hasPermission($userId, $page, $action);
+    }
+
+    /**
+     * Require permission - throws exception if not authorized
+     */
+    private function requirePermission(string $page, string $action): void
+    {
+        if (!$this->hasPermission($page, $action)) {
+            if (!isset($_SESSION['user_id'])) {
+                http_response_code(401);
+                if (headers_sent()) {
+                    echo json_encode(['error' => 'Authentication required']);
+                } else {
+                    header('Location: /login');
+                }
+                exit;
+            } else {
+                http_response_code(403);
+                if (strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false) {
+                    echo json_encode(['error' => "Access denied. You don't have permission to $action payments"]);
+                } else {
+                    echo "Access denied. You don't have permission to $action payments.";
+                }
+                exit;
+            }
+        }
     }
 
     // Create a new payment (expects data from POST)
     public function create(array $requestData): void
     {
+        // Check permission first
+        $this->requirePermission('Payments', 'create');
+
         header('Content-Type: application/json'); // Ensure JSON response for AJAX
         error_log("PaymentsController::create called with data: " . print_r($requestData, true));
 
@@ -38,7 +90,6 @@ class PaymentsController
             $success = $this->paymentModel->create($requestData);
             if ($success) {
                 error_log("Payment created successfully.");
-                $this->logActivity('create', $requestData['license_id'] ?? null, $requestData);
                 echo json_encode(['message' => 'Payment created successfully']);
             } else {
                 error_log("Failed to create payment in model.");
@@ -55,13 +106,25 @@ class PaymentsController
     // Read all payments
     public function index(): void
     {
+        // Check permission to view payments
+        $this->requirePermission('Payments', 'view');
+
         $payments = $this->paymentModel->getAll();
+
+        // Pass permission variables to view
+        $canCreate = $this->hasPermission('Payments', 'create');
+        $canUpdate = $this->hasPermission('Payments', 'update');
+        $canDelete = $this->hasPermission('Payments', 'delete');
+
         require __DIR__ . '/../../views/payments_manager/index.php';
     }
 
     // DataTable AJAX endpoint
     public function datatable(): void
     {
+        // Check permission to view payments
+        $this->requirePermission('Payments', 'view');
+
         // Get request parameters
         $draw = $_POST['draw'] ?? 1;
         $start = $_POST['start'] ?? 0;
@@ -74,12 +137,20 @@ class PaymentsController
         // Get data from model
         $result = $this->paymentModel->getDataTableData($start, $length, $search, $clientFilter, $_POST['order'] ?? []);
 
+        // Check permissions for UI elements
+        $canUpdate = $this->hasPermission('Payments', 'update');
+        $canDelete = $this->hasPermission('Payments', 'delete');
+
         // Prepare response
         $response = [
             "draw" => intval($draw),
             "recordsTotal" => $result['totalRecords'],
             "recordsFiltered" => $result['filteredRecords'],
-            "data" => $result['data']
+            "data" => $result['data'],
+            "permissions" => [
+                'canUpdate' => $canUpdate,
+                'canDelete' => $canDelete
+            ]
         ];
         header('Content-Type: application/json');
         echo json_encode($response);
@@ -109,6 +180,8 @@ class PaymentsController
     // Show edit form
     public function edit(): void
     {
+        $this->requirePermission('Payments', 'update');
+
         $id = $_GET['id'] ?? 0;
         error_log("PaymentsController::edit called for ID: " . $id);
         $payment = $this->paymentModel->find($id);
@@ -126,6 +199,8 @@ class PaymentsController
     // Update payment by ID (expects data from POST/PUT)
     public function update(int $id): void
     {
+        $this->requirePermission('Payments', 'update');
+
         header('Content-Type: application/json');
         error_log("PaymentsController::update called for ID: " . $id);
         error_log("Received POST data: " . print_r($_POST, true)); // Log all POST data
@@ -165,7 +240,6 @@ class PaymentsController
             $success = $this->paymentModel->update($id, $requestData);
             if ($success) {
                 error_log("Payment ID {$id} updated successfully.");
-                $this->logActivity('update', $id, $requestData);
                 echo json_encode(['message' => 'Payment updated successfully']);
             } else {
                 error_log("Failed to update payment ID {$id} in model.");
@@ -182,6 +256,8 @@ class PaymentsController
     // Soft delete payment by ID
     public function delete(int $id): void
     {
+        $this->requirePermission('Payments', 'delete');
+
         header('Content-Type: application/json'); // Ensure JSON response for AJAX
         error_log("PaymentsController::delete called for ID: " . $id);
 
@@ -199,7 +275,6 @@ class PaymentsController
             $success = $this->paymentModel->deletePayment($id);
             if ($success) {
                 error_log("Payment ID {$id} deleted successfully.");
-                $this->logActivity('delete', $id);
                 echo json_encode(['message' => 'Payment deleted successfully']);
             } else {
                 error_log("Failed to delete payment ID {$id} in model.");
@@ -273,6 +348,8 @@ class PaymentsController
 
     public function createForm()
     {
+        $this->requirePermission('Payments', 'create');
+
         error_log("PaymentsController::createForm called.");
         // Make PDO available globally for the view
         $GLOBALS['pdo'] = $this->paymentModel->getDb();
@@ -297,52 +374,28 @@ class PaymentsController
     // New: Method to load the form for creating payment for a license
     public function createPaymentForLicenseForm(): void
     {
+        $this->requirePermission('Payments', 'create');
+
         error_log("PaymentsController::createPaymentForLicenseForm called.");
+        // Make PDO available globally for the view
+        $GLOBALS['pdo'] = $this->paymentModel->getDb();
 
-        // Validate license_id exists
+        // Pass license_id (which is projects_list.id) and license_name to the view
         $licenseId = $_GET['license_id'] ?? null;
-        if (!$licenseId) {
-            error_log("Error: Missing license_id parameter");
-            header('Location: /payments'); // Redirect if no license_id
-            exit;
-        }
+        $licenseName = $_GET['license_name'] ?? 'N/A';
 
-        // Get license details for validation
-        try {
-            $stmt = $this->paymentModel->getDb()->prepare("
-            SELECT id, name FROM projects_list WHERE id = ?
-        ");
-            $stmt->execute([$licenseId]);
-            $license = $stmt->fetch(\PDO::FETCH_ASSOC);
+        // These variables will be available in the required view
+        // For the client dropdown, we need all available clients
+        $availableClients = $this->paymentModel->getAllClients(); // Assuming this method exists and returns all clients
 
-            if (!$license) {
-                error_log("Error: Invalid license_id: {$licenseId}");
-                header('Location: /payments'); // Redirect if invalid license
-                exit;
-            }
-
-            // Make data available to view
-            $GLOBALS['pdo'] = $this->paymentModel->getDb();
-            $licenseName = $license['name'] ?? 'N/A';
-            $availableClients = $this->paymentModel->getAllClients();
-
-            // Log the form access
-            $this->logActivity('view_payment_form', $licenseId, [
-                'license_name' => $licenseName
-            ]);
-
-            require __DIR__ . '/../../views/payments_manager/create_payment_for_license.php';
-
-        } catch (\PDOException $e) {
-            error_log("Database error in createPaymentForLicenseForm: " . $e->getMessage());
-            header('Location: /payments?error=db_error');
-            exit;
-        }
+        require __DIR__ . '/../../views/payments_manager/create_payment_for_license.php';
     }
 
     // New: Method to handle creation of payment for a license
     public function createPaymentForLicense(array $requestData): void
     {
+        $this->requirePermission('Payments', 'create');
+
         header('Content-Type: application/json');
         error_log("PaymentsController::createPaymentForLicense called with data: " . print_r($requestData, true));
 
@@ -377,71 +430,4 @@ class PaymentsController
             echo json_encode(['error' => 'Server error: ' . $e->getMessage()]);
         }
     }
-
-    private function logActivity($actionType, $licenseId = null, $requestData = []): void
-    {
-
-        // Sanitize action type
-        $actionMap = [
-            'create' => 'Create Payment',
-            'update' => 'Update Payment',
-            'delete' => 'Delete Payment',
-            'view_payment_form' => 'View Payment Form',
-            'create_license_payment' => 'Create License Payment',
-            1 => 'Create Payment',
-            2 => 'Update Payment',
-            3 => 'Delete Payment'
-        ];
-
-        $action = $actionMap[strtolower($actionType)] ?? 'Unknown Action';
-
-        // Get client IP safely
-        $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
-        foreach (['HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR'] as $key) {
-            if (!empty($_SERVER[$key])) {
-                $ipAddress = is_array($_SERVER[$key])
-                    ? $_SERVER[$key][0]
-                    : explode(',', $_SERVER[$key])[0];
-                break;
-            }
-        }
-
-        // Build description safely
-        $descriptionParts = [];
-        if ($licenseId !== null) {
-            $descriptionParts[] = "License ID: " . htmlspecialchars($licenseId, ENT_QUOTES);
-        }
-
-        if (!empty($requestData)) {
-            $sanitizedData = array_map(function ($value) {
-                return is_scalar($value) ? htmlspecialchars($value, ENT_QUOTES) : '[complex data]';
-            }, $requestData);
-            $descriptionParts[] = "Data: " . substr(json_encode($sanitizedData), 0, 500);
-        }
-
-        $description = implode(' | ', $descriptionParts) ?: 'No additional info';
-
-        try {
-            $stmt = $this->paymentModel->getDb()->prepare("
-            INSERT INTO activity_logs 
-            (user_id, action, description, ip_address, created_at)
-            VALUES 
-            (:user_id, :action, :description, :ip_address, NOW())
-        ");
-
-            $stmt->execute([
-                ':user_id' => $_SESSION['user_id'],
-                ':action' => $action,
-                ':description' => $description,
-                ':ip_address' => $ipAddress
-            ]);
-
-            error_log("Activity logged: {$action} for license {$licenseId}");
-
-        } catch (\Exception $e) {
-            error_log("Failed to log activity: " . $e->getMessage());
-            // Consider adding error handling or notification here
-        }
-    }
-
 }
