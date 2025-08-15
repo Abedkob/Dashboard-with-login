@@ -276,7 +276,9 @@ class LogsController
                 'DELETE_LICENSE',
                 'Delete Payment',
                 'CREATE_LICENSE',
-                'Create Payment'
+                'Create Payment' .
+                'Deleted Action',
+                'Create Action'
             ];
 
             header('Content-Type: application/json');

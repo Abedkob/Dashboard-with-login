@@ -79,7 +79,7 @@ $request = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 // Remove any trailing slash for consistent matching
 $request = rtrim($request, '/');
-
+$requestMethod = $_SERVER['REQUEST_METHOD'];
 // Remove base path from request for permission checking
 $routeForPermission = str_replace($basePath, '', $request);
 if ($routeForPermission === '') {
@@ -206,6 +206,7 @@ switch ($request) {
             $controller->create($_POST);
         }
         break;
+
 
     case $basePath . '/payments-manager/datatable':
         requireAuth();
@@ -349,16 +350,34 @@ switch ($request) {
         (new App\Controllers\AuthController($pdo))->verify2FA();
         break;
 
-    // UserActionController routes
-    case $basePath . '/user-actions/create':
+    case $basePath . '/user-actions/create-form':
         requireAuth();
         requirePermission('/user-actions/create');
         require __DIR__ . '/../src/Controllers/UserActionController.php';
-        $controller = new App\Controllers\UserActionController($pdo);
+        $userActionController = new App\Controllers\UserActionController($pdo);
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            $controller->createForm();
+            $userActionController->createForm();
+        } else {
+            http_response_code(405);
+            echo 'Method Not Allowed';
+            exit;
         }
         break;
+
+    case $basePath . '/user-actions/store-batch':
+        requireAuth();
+        requirePermission('/user-actions/create'); // enforce permission
+        require __DIR__ . '/../src/Controllers/UserActionController.php';
+        $userActionController = new App\Controllers\UserActionController($pdo); // instantiate
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $userActionController->storeBatch();
+        } else {
+            http_response_code(405);
+            echo 'Method Not Allowed';
+            exit;
+        }
+        break;
+
 
     case $basePath . '/user-actions/track-page-view':
         requireAuth();

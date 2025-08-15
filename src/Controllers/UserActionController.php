@@ -10,6 +10,7 @@ if (!class_exists('App\Controllers\UserActionController')) {
     class UserActionController
     {
         private UserAction $userActionModel;
+        private PDO $db;
 
         private array $allowedActions = [
             'Dashboard' => ['view', 'renew licenses'],
@@ -38,6 +39,7 @@ if (!class_exists('App\Controllers\UserActionController')) {
 
         public function __construct(PDO $db)
         {
+            $this->db = $db;
             $this->userActionModel = new UserAction($db);
         }
 
@@ -117,7 +119,13 @@ if (!class_exists('App\Controllers\UserActionController')) {
          */
         public function store(): void
         {
-            header('Content-Type: application/json');
+            // Prevent any output before headers
+            ob_clean();
+
+            // Set proper headers for JSON response
+            header('Content-Type: application/json; charset=utf-8');
+            header('Cache-Control: no-cache, must-revalidate');
+            header('Pragma: no-cache');
 
             try {
                 // Check permission to create user actions
@@ -205,6 +213,141 @@ if (!class_exists('App\Controllers\UserActionController')) {
         }
 
         /**
+         * Store multiple user actions in batch
+         */
+        public function storeBatch(): void
+        {
+            // Prevent any output before headers
+            ob_clean();
+
+            // Set proper headers for JSON response
+            header('Content-Type: application/json; charset=utf-8');
+            header('Cache-Control: no-cache, must-revalidate');
+            header('Pragma: no-cache');
+
+            try {
+                // Check permission to create user actions
+                $this->requirePermission('Roles', 'create');
+
+                // Validate request method
+                if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method Not Allowed']);
+                    exit;
+                }
+
+                // Get JSON input
+                $input = json_decode(file_get_contents('php://input'), true);
+
+                if (!$input) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => 'Invalid JSON data']);
+                    exit;
+                }
+
+                $userId = isset($input['user_id']) ? (int) $input['user_id'] : 0;
+                $permissions = isset($input['permissions']) ? $input['permissions'] : [];
+
+                error_log("UserActionController::storeBatch() - Received data: user_id=$userId, permissions count=" . count($permissions));
+
+                // Validate required fields
+                if ($userId === 0) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => 'Please select a valid user']);
+                    exit;
+                }
+
+                if (empty($permissions) || !is_array($permissions)) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => 'Please select at least one permission']);
+                    exit;
+                }
+
+                $createdCount = 0;
+                $skippedCount = 0;
+                $errors = [];
+
+                // Begin transaction
+                $this->db->beginTransaction();
+
+                try {
+                    foreach ($permissions as $permission) {
+                        if (!isset($permission['page']) || !isset($permission['action'])) {
+                            $errors[] = 'Invalid permission format';
+                            continue;
+                        }
+
+                        $page = trim($permission['page']);
+                        $action = trim($permission['action']);
+
+                        // Validate page and action
+                        if (!$this->isActionAllowed($page, $action)) {
+                            $errors[] = "Action '$action' is not allowed for page '$page'";
+                            continue;
+                        }
+
+                        // Check if user already has this action for this page
+                        $existingActions = $this->userActionModel->getActionsForUserAndPage($userId, $page);
+
+                        if (in_array($action, $existingActions)) {
+                            $skippedCount++;
+                            error_log("UserActionController::storeBatch() - Skipped existing permission: user $userId, page '$page', action '$action'");
+                            continue;
+                        }
+
+                        // Create the user action record
+                        $result = $this->userActionModel->create($userId, $page, $action);
+
+                        if ($result['success']) {
+                            $createdCount++;
+                            error_log("UserActionController::storeBatch() - Created permission: user $userId, page '$page', action '$action', ID: " . $result['id']);
+                        } else {
+                            $errors[] = "Failed to create permission for '$page' -> '$action': " . $result['error'];
+                        }
+                    }
+
+                    // Commit transaction
+                    $this->db->commit();
+
+                    // Log the batch activity
+                    $ipAddress = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+                    $description = "Created $createdCount user actions in batch" . ($skippedCount > 0 ? " ($skippedCount skipped)" : "");
+
+                    $stmt = $this->db->prepare("
+                        INSERT INTO activity_logs (user_id, action, description, ip_address)
+                        VALUES (:user_id, 'create user actions batch', :description, :ip_address)
+                    ");
+                    $stmt->execute([
+                        ':user_id' => $_SESSION['user_id'],
+                        ':description' => $description,
+                        ':ip_address' => $ipAddress
+                    ]);
+
+                    // Success response
+                    echo json_encode([
+                        'success' => true,
+                        'message' => "Successfully created $createdCount user actions" . ($skippedCount > 0 ? " ($skippedCount already existed)" : ""),
+                        'created_count' => $createdCount,
+                        'skipped_count' => $skippedCount,
+                        'errors' => $errors
+                    ]);
+                    exit;
+
+                } catch (Exception $e) {
+                    // Rollback transaction on error
+                    $this->db->rollBack();
+                    throw $e;
+                }
+
+            } catch (Exception $ex) {
+                http_response_code(500);
+                error_log("UserActionController::storeBatch() - Exception: " . $ex->getMessage());
+                echo json_encode(['success' => false, 'error' => 'An unexpected error occurred: ' . $ex->getMessage()]);
+                exit;
+            }
+        }
+
+        /**
          * Show activity logs with filters and pagination
          */
         public function showActivityLogs(): void
@@ -269,7 +412,6 @@ if (!class_exists('App\Controllers\UserActionController')) {
                 // Debug: Log user data
                 error_log("UserActionController::showActivityLogs() - Available users count: " . count($availableUsers));
                 error_log("UserActionController::showActivityLogs() - Is admin: " . ($isAdmin ? 'true' : 'false'));
-                error_log("UserActionController::showActivityLogs() - User data: " . print_r($availableUsers, true));
 
                 // Permission checks for UI elements - more granular for non-admin users
                 $canCreate = $this->hasPermission('Roles', 'create');
@@ -286,6 +428,14 @@ if (!class_exists('App\Controllers\UserActionController')) {
                 // Debug: Log permissions
                 error_log("UserActionController::showActivityLogs() - Permissions - Create: " . ($canCreate ? 'true' : 'false') . ", View: " . ($canView ? 'true' : 'false') . ", Delete: " . ($canDelete ? 'true' : 'false'));
 
+                // Check if this is an AJAX request for table refresh
+                if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+                    // Return only the table content for AJAX requests
+                    $this->renderTableContent($actions, $totalActions, $pageNumber, $perPage, $isAdmin, $canDelete);
+                    return;
+                }
+
+                // Include the view file
                 require __DIR__ . '/../../views/user-actions/index.php';
             } catch (Exception $e) {
                 error_log("UserActionController::showActivityLogs() - " . $e->getMessage());
@@ -298,11 +448,139 @@ if (!class_exists('App\Controllers\UserActionController')) {
         }
 
         /**
+         * Render only the table content for AJAX requests
+         */
+        private function renderTableContent($actions, $totalActions, $pageNumber, $perPage, $isAdmin, $canDelete): void
+        {
+            header('Content-Type: text/html; charset=UTF-8');
+
+            ob_start();
+            ?>
+            <table class="table table-hover mb-0" id="userActionsTable">
+                <thead class="table-light">
+                    <tr>
+                        <?php if ($isAdmin): ?>
+                            <th><i class="fas fa-user me-1"></i>User</th>
+                        <?php endif; ?>
+                        <th><i class="fas fa-file-alt me-1"></i>Page</th>
+                        <th><i class="fas fa-bolt me-1"></i>Action</th>
+                        <th width="120" class="text-center"><i class="fas fa-cogs me-1"></i>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <?php if (empty($actions)): ?>
+                        <tr>
+                            <td colspan="<?= $isAdmin ? 4 : 3 ?>" class="text-center py-4">
+                                <div class="text-center">
+                                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No user actions found</h5>
+                                    <p class="text-muted">Try adjusting your filters or create a new action</p>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($actions as $log): ?>
+                            <tr>
+                                <?php if ($isAdmin): ?>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                                <i class="fas fa-user text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <span class="fw-semibold"><?= htmlspecialchars($log['username']) ?></span>
+                                                <br><small class="text-muted">ID: <?= (int) $log['user_id'] ?></small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                <?php endif; ?>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="fas fa-file-alt me-1"></i><?= htmlspecialchars($log['page']) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary action-badge">
+                                        <i class="fas fa-bolt me-1"></i><?= htmlspecialchars($log['action']) ?>
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <?php if ($canDelete): ?>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-danger" onclick="deleteAction(<?= (int) $log['id'] ?>)"
+                                                title="Delete Action">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    <?php else: ?>
+                                        <span class="text-muted small">
+                                            <i class="fas fa-lock me-1"></i>No actions available
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+
+            <div id="totalActionsCount" style="display: none;">
+                <i class="fas fa-info-circle me-1"></i>
+                Total: <?= count($actions) ?> actions
+            </div>
+
+            <?php if ($totalActions > $perPage): ?>
+                <div id="paginationContainer" style="display: none;">
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <?php
+                            $totalPages = (int) ceil($totalActions / $perPage);
+                            $currentPage = $pageNumber;
+
+                            // Previous page link
+                            if ($currentPage > 1): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="javascript:void(0)" onclick="loadPage(<?= $currentPage - 1 ?>)"
+                                        aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            <?php endif; ?>
+
+                            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                                <li class="page-item <?= ($i == $currentPage) ? 'active' : '' ?>">
+                                    <a class="page-link" href="javascript:void(0)" onclick="loadPage(<?= $i ?>)"><?= $i ?></a>
+                                </li>
+                            <?php endfor; ?>
+
+                            <?php if ($currentPage < $totalPages): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="javascript:void(0)" onclick="loadPage(<?= $currentPage + 1 ?>)"
+                                        aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            <?php endif; ?>
+                        </ul>
+                    </nav>
+                </div>
+            <?php endif; ?>
+            <?php
+            echo ob_get_clean();
+        }
+
+        /**
          * Delete a user action by ID
          */
         public function delete(): void
         {
-            header('Content-Type: application/json');
+            // Prevent any output before headers
+            ob_clean();
+
+            // Set proper headers for JSON response
+            header('Content-Type: application/json; charset=utf-8');
+            header('Cache-Control: no-cache, must-revalidate');
+            header('Pragma: no-cache');
 
             try {
                 // Check permission to delete user actions
@@ -332,6 +610,21 @@ if (!class_exists('App\Controllers\UserActionController')) {
                     echo json_encode(['success' => false, 'error' => 'Failed to delete user action']);
                     exit;
                 }
+
+                // Log the activity
+                $ipAddress = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+                $username = $_SESSION['username'] ?? "User ID {$_SESSION['user_id']}";
+                $description = "Deleted user action with ID {$id}.";
+
+                $stmt = $this->db->prepare("
+                    INSERT INTO activity_logs (user_id, action, description, ip_address)
+                    VALUES (:user_id, 'delete user action', :description, :ip_address)
+                ");
+                $stmt->execute([
+                    ':user_id' => $_SESSION['user_id'],
+                    ':description' => $description,
+                    ':ip_address' => $ipAddress
+                ]);
 
                 echo json_encode([
                     'success' => true,
@@ -388,7 +681,7 @@ if (!class_exists('App\Controllers\UserActionController')) {
          */
         public function getUserPermissions(): void
         {
-            header('Content-Type: application/json');
+            header('Content-Type: application/json; charset=utf-8');
 
             try {
                 if (!isset($_SESSION['user_id'])) {

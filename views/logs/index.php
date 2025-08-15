@@ -635,132 +635,125 @@
         // Format log description in a user-friendly way
         function formatLogDescription(response) {
             let html = `
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="description-item">
-                        <div class="description-label">
-                            <i class="fas fa-hashtag me-2"></i>Log ID
-                        </div>
-                        <div class="description-value">${response.id || 'N/A'}</div>
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="description-item">
+                    <div class="description-label">
+                        <i class="fas fa-hashtag me-2"></i>Log ID
                     </div>
+                    <div class="description-value">${response.id || 'N/A'}</div>
                 </div>
-                <div class="col-md-6">
-                    <div class="description-item">
-                        <div class="description-label">
-                            <i class="fas fa-user me-2"></i>User
-                        </div>
-                        <div class="description-value">${response.user || 'System'}</div>
+            </div>
+            <div class="col-md-6">
+                <div class="description-item">
+                    <div class="description-label">
+                        <i class="fas fa-user me-2"></i>User
+                    </div>
+                    <div class="description-value">${response.user || 'System'}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="description-item">
+                    <div class="description-label">
+                        <i class="fas fa-bolt me-2"></i>Action
+                    </div>
+                    <div class="description-value">
+                        <span class="badge bg-primary">${response.action || 'N/A'}</span>
                     </div>
                 </div>
             </div>
-            
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="description-item">
-                        <div class="description-label">
-                            <i class="fas fa-bolt me-2"></i>Action
-                        </div>
-                        <div class="description-value">
-                            <span class="badge bg-primary">${response.action || 'N/A'}</span>
-                        </div>
+            <div class="col-md-6">
+                <div class="description-item">
+                    <div class="description-label">
+                        <i class="fas fa-network-wired me-2"></i>IP Address
                     </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="description-item">
-                        <div class="description-label">
-                            <i class="fas fa-network-wired me-2"></i>IP Address
-                        </div>
-                        <div class="description-value">${response.ip_address || 'N/A'}</div>
-                    </div>
+                    <div class="description-value">${response.ip_address || 'N/A'}</div>
                 </div>
             </div>
-            
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="description-item">
-                        <div class="description-label">
-                            <i class="fas fa-clock me-2"></i>Date & Time
-                        </div>
-                        <div class="description-value">${response.created_at || 'N/A'}</div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="description-item">
+                    <div class="description-label">
+                        <i class="fas fa-clock me-2"></i>Date & Time
                     </div>
+                    <div class="description-value">${response.created_at || 'N/A'}</div>
                 </div>
             </div>
-        `;
+        </div>
+    `;
 
-            // Try to parse description as JSON for better formatting
-            let description = response.description;
+            let description = response.description || '';
+            let beforeJson = description;
             let parsedData = null;
 
-            try {
-                parsedData = JSON.parse(description);
-            } catch (e) {
-                // Not JSON, treat as plain text
+            // Try to extract JSON if embedded in text
+            let match = description.match(/\{.*\}$/);
+            if (match) {
+                try {
+                    parsedData = JSON.parse(match[0]);
+                    beforeJson = description.replace(match[0], '').trim();
+                } catch (e) {
+                    parsedData = null;
+                }
             }
 
             if (parsedData && typeof parsedData === 'object') {
-                html += `
-                <div class="mb-4">
-                    <div class="description-label mb-3">
-                        <i class="fas fa-info-circle me-2"></i>Activity Details
-                    </div>
-                    <div class="row">
-            `;
+                // Format narrative
+                let details = [];
 
-                // Format common log fields in a user-friendly way
-                Object.keys(parsedData).forEach(key => {
-                    let value = parsedData[key];
-                    let displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                if (parsedData.name) {
+                    details.push(`for <strong>${parsedData.name}</strong>`);
+                }
+                if (parsedData.license) {
+                    details.push(`with license key <code>${parsedData.license}</code>`);
+                }
+                if (parsedData.valid_from) {
+                    let fromDate = new Date(parsedData.valid_from).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+                    details.push(`starting on <strong>${fromDate}</strong>`);
+                }
+                if (parsedData.valid_to) {
+                    let toDate = new Date(parsedData.valid_to).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+                    details.push(`valid until <strong>${toDate}</strong>`);
+                }
 
-                    // Format specific fields
-                    if (key === 'timestamp' || key === 'created_at' || key === 'updated_at') {
-                        value = new Date(value).toLocaleString();
-                    } else if (key === 'user_id' && value) {
-                        displayKey = 'User ID';
-                    } else if (key === 'license_id' && value) {
-                        displayKey = 'License ID';
-                    } else if (key === 'payment_id' && value) {
-                        displayKey = 'Payment ID';
-                    } else if (typeof value === 'object') {
-                        value = JSON.stringify(value, null, 2);
-                    }
-
-                    html += `
-                    <div class="col-md-6 mb-3">
-                        <div class="description-item">
-                            <div class="description-label">${displayKey}</div>
-                            <div class="description-value">${value || 'N/A'}</div>
-                        </div>
-                    </div>
-                `;
-                });
+                let friendlyText = beforeJson;
+                if (details.length) {
+                    friendlyText += ` — ${details.join(', ')}`;
+                }
 
                 html += `
-                    </div>
+            <div class="mb-3">
+                <div class="description-label mb-2">
+                    <i class="fas fa-info-circle me-2"></i>Activity Details
                 </div>
-                
-                <div class="mb-3">
-                    <div class="description-label mb-2">
-                        <i class="fas fa-code me-2"></i>Raw Data (JSON)
-                    </div>
-                    <div class="json-data">${JSON.stringify(parsedData, null, 2)}</div>
+                <div class="description-item">
+                    <div class="description-value">${friendlyText}</div>
                 </div>
-            `;
+            </div>
+        `;
             } else {
-                // Plain text description
+                // Just plain text description
                 html += `
-                <div class="mb-3">
-                    <div class="description-label mb-2">
-                        <i class="fas fa-align-left me-2"></i>Description
-                    </div>
-                    <div class="description-item">
-                        <div class="description-value">${description}</div>
-                    </div>
+            <div class="mb-3">
+                <div class="description-label mb-2">
+                    <i class="fas fa-align-left me-2"></i>Description
                 </div>
-            `;
+                <div class="description-item">
+                    <div class="description-value">${description}</div>
+                </div>
+            </div>
+        `;
             }
 
             return html;
         }
+
+
 
         function updateTableInfo() {
             const info = logsTable.page.info();
