@@ -148,6 +148,67 @@ include __DIR__ . '/../layouts/header.php';
         margin-bottom: 1rem;
     }
 
+    /* Enhanced Pagination Styles */
+    .pagination-info {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .pagination-controls {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .pagination-summary {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .per-page-selector {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .pagination .page-link {
+        color: #495057;
+        border-color: #dee2e6;
+    }
+
+    .pagination .page-link:hover {
+        color: #007bff;
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #fff;
+        border-color: #dee2e6;
+    }
+
+    .pagination-jump {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .pagination-jump input {
+        width: 60px;
+        text-align: center;
+    }
+
     @media (max-width: 768px) {
         .permission-grid {
             grid-template-columns: 1fr;
@@ -156,6 +217,17 @@ include __DIR__ . '/../layouts/header.php';
         .btn-toolbar {
             flex-direction: column;
             gap: 0.5rem;
+        }
+
+        .pagination-controls {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .pagination-summary,
+        .per-page-selector,
+        .pagination-jump {
+            justify-content: center;
         }
     }
 </style>
@@ -283,6 +355,40 @@ include __DIR__ . '/../layouts/header.php';
         </div>
     </div>
 
+    <!-- Enhanced Pagination Info -->
+    <div class="pagination-info" id="paginationInfo">
+        <div class="pagination-controls">
+            <div class="pagination-summary" id="paginationSummary">
+                <i class="fas fa-info-circle me-1"></i>
+                Showing <?= min(($pageNumber - 1) * $perPage + 1, $totalActions) ?> to <?= min($pageNumber * $perPage, $totalActions) ?> of <?= $totalActions ?> entries
+            </div>
+            
+            <div class="per-page-selector">
+                <label for="perPageSelect" class="form-label mb-0 me-2">Show:</label>
+                <select id="perPageSelect" class="form-select form-select-sm" style="width: auto;" onchange="UserActionsManager.changePerPage(this.value)">
+                    <option value="10" <?= $perPage == 10 ? 'selected' : '' ?>>10</option>
+                    <option value="20" <?= $perPage == 20 ? 'selected' : '' ?>>20</option>
+                    <option value="50" <?= $perPage == 50 ? 'selected' : '' ?>>50</option>
+                    <option value="100" <?= $perPage == 100 ? 'selected' : '' ?>>100</option>
+                </select>
+                <span class="ms-2">entries</span>
+            </div>
+
+            <?php if ($totalActions > $perPage): ?>
+                <div class="pagination-jump">
+                    <span class="me-2">Go to page:</span>
+                    <input type="number" id="pageJumpInput" class="form-control form-control-sm" 
+                           min="1" max="<?= (int) ceil($totalActions / $perPage) ?>" 
+                           value="<?= $pageNumber ?>" 
+                           onkeypress="UserActionsManager.handlePageJump(event)">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="UserActionsManager.jumpToPage()">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
     <!-- Activity Logs Table -->
     <div class="card shadow-sm">
         <div class="card-header">
@@ -291,10 +397,15 @@ include __DIR__ . '/../layouts/header.php';
                     <i class="fas fa-table me-2 text-primary"></i>
                     User Actions Database
                 </h5>
-                <small class="text-muted" id="totalActionsCount">
-                    <i class="fas fa-info-circle me-1"></i>
-                    Total: <?= count($actions) ?> actions
-                </small>
+                <div class="d-flex align-items-center gap-3">
+                    <small class="text-muted" id="totalActionsCount">
+                        <i class="fas fa-database me-1"></i>
+                        Total: <?= $totalActions ?> actions
+                    </small>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="UserActionsManager.reloadTableContent()" title="Refresh Table">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
             </div>
         </div>
         <div class="card-body p-0">
@@ -370,37 +481,87 @@ include __DIR__ . '/../layouts/header.php';
         </div>
     </div>
 
-    <!-- Pagination -->
-    <?php if ($totalActions > $perPage): ?>
+    <!-- Enhanced Pagination -->
+    <?php if ($totalActions > 0): ?>
         <nav aria-label="Page navigation" class="mt-4" id="paginationContainer">
-            <ul class="pagination justify-content-center">
-                <?php
-                $totalPages = (int) ceil($totalActions / $perPage);
-                $currentPage = $pageNumber;
+            <?php if ($totalActions > $perPage): ?>
+                <ul class="pagination justify-content-center">
+                    <?php
+                    $totalPages = (int) ceil($totalActions / $perPage);
+                    $currentPage = $pageNumber;
+                    $showPages = 5; // Number of page links to show
+                    $startPage = max(1, $currentPage - floor($showPages / 2));
+                    $endPage = min($totalPages, $startPage + $showPages - 1);
+                    
+                    // Adjust start page if we're near the end
+                    if ($endPage - $startPage + 1 < $showPages) {
+                        $startPage = max(1, $endPage - $showPages + 1);
+                    }
+                    ?>
 
-                // Previous page link
-                if ($currentPage > 1): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="javascript:void(0)" onclick="UserActionsManager.loadPage(<?= $currentPage - 1 ?>)" aria-label="Previous">
-                            <span aria-hidden="true">&laquo;</span>
+                    <!-- First page link -->
+                    <?php if ($startPage > 1): ?>
+                        <li class="page-item">
+                            <a class="page-link" href="javascript:void(0)" onclick="UserActionsManager.loadPage(1)" title="First Page">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+
+                    <!-- Previous page link -->
+                    <li class="page-item <?= ($currentPage <= 1) ? 'disabled' : '' ?>">
+                        <a class="page-link" href="javascript:void(0)" 
+                           onclick="<?= ($currentPage > 1) ? 'UserActionsManager.loadPage(' . ($currentPage - 1) . ')' : 'return false;' ?>" 
+                           aria-label="Previous" title="Previous Page">
+                            <span aria-hidden="true"><i class="fas fa-angle-left"></i></span>
                         </a>
                     </li>
-                <?php endif; ?>
 
-                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                    <li class="page-item <?= ($i == $currentPage) ? 'active' : '' ?>">
-                        <a class="page-link" href="javascript:void(0)" onclick="UserActionsManager.loadPage(<?= $i ?>)"><?= $i ?></a>
-                    </li>
-                <?php endfor; ?>
+                    <!-- Page number links -->
+                    <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
+                        <li class="page-item <?= ($i == $currentPage) ? 'active' : '' ?>">
+                            <a class="page-link" href="javascript:void(0)" onclick="UserActionsManager.loadPage(<?= $i ?>)" title="Page <?= $i ?>">
+                                <?= $i ?>
+                                <?php if ($i == $currentPage): ?>
+                                    <span class="visually-hidden">(current)</span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
+                    <?php endfor; ?>
 
-                <?php if ($currentPage < $totalPages): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="javascript:void(0)" onclick="UserActionsManager.loadPage(<?= $currentPage + 1 ?>)" aria-label="Next">
-                            <span aria-hidden="true">&raquo;</span>
+                    <!-- Next page link -->
+                    <li class="page-item <?= ($currentPage >= $totalPages) ? 'disabled' : '' ?>">
+                        <a class="page-link" href="javascript:void(0)" 
+                           onclick="<?= ($currentPage < $totalPages) ? 'UserActionsManager.loadPage(' . ($currentPage + 1) . ')' : 'return false;' ?>" 
+                           aria-label="Next" title="Next Page">
+                            <span aria-hidden="true"><i class="fas fa-angle-right"></i></span>
                         </a>
                     </li>
-                <?php endif; ?>
-            </ul>
+
+                    <!-- Last page link -->
+                    <?php if ($endPage < $totalPages): ?>
+                        <li class="page-item">
+                            <a class="page-link" href="javascript:void(0)" onclick="UserActionsManager.loadPage(<?= $totalPages ?>)" title="Last Page">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                </ul>
+
+                <!-- Pagination info below -->
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        Page <?= $currentPage ?> of <?= $totalPages ?> 
+                        (<?= $totalActions ?> total entries)
+                    </small>
+                </div>
+            <?php else: ?>
+                <div class="text-center">
+                    <small class="text-muted">
+                        Showing all <?= $totalActions ?> entries
+                    </small>
+                </div>
+            <?php endif; ?>
         </nav>
     <?php endif; ?>
 
@@ -561,7 +722,7 @@ include __DIR__ . '/../layouts/header.php';
     <?php endif; ?>
 
     <script>
-        // User Actions Manager - Namespace to avoid global function conflicts
+        // User Actions Manager - Enhanced with better pagination
         const UserActionsManager = {
             // Configuration
             config: {
@@ -572,14 +733,19 @@ include __DIR__ . '/../layouts/header.php';
                     isAdmin: <?= json_encode($isAdmin) ?>
                 },
                 baseUrl: '<?= BASE_URL ?>',
-                allActions: <?= json_encode($availableActions) ?>
+                allActions: <?= json_encode($availableActions) ?>,
+                currentPage: <?= $pageNumber ?>,
+                perPage: <?= $perPage ?>,
+                totalActions: <?= $totalActions ?>,
+                totalPages: <?= (int) ceil($totalActions / $perPage) ?>
             },
 
             // State
             state: {
                 createActionModal: null,
                 deleteActionModal: null,
-                currentDeleteId: null
+                currentDeleteId: null,
+                isLoading: false
             },
 
             // Initialize the manager
@@ -587,6 +753,12 @@ include __DIR__ . '/../layouts/header.php';
                 console.log('UserActionsManager initializing...');
                 console.log('User permissions:', this.config.userPermissions);
                 console.log('Available actions:', this.config.allActions);
+                console.log('Pagination config:', {
+                    currentPage: this.config.currentPage,
+                    perPage: this.config.perPage,
+                    totalActions: this.config.totalActions,
+                    totalPages: this.config.totalPages
+                });
 
                 // Initialize modals
                 if (this.config.userPermissions.canCreate) {
@@ -902,10 +1074,53 @@ include __DIR__ . '/../layouts/header.php';
                 this.reloadTableContentWithParams(new URLSearchParams());
             },
 
+            // Enhanced pagination functions
             loadPage: function(pageNumber) {
+                if (this.state.isLoading) {
+                    console.log('Already loading, ignoring page request');
+                    return;
+                }
+
+                if (pageNumber < 1 || pageNumber > this.config.totalPages) {
+                    this.showToast(`Invalid page number. Please enter a number between 1 and ${this.config.totalPages}`, 'warning');
+                    return;
+                }
+
                 const params = new URLSearchParams(window.location.search);
                 params.set('page_number', pageNumber);
                 this.reloadTableContentWithParams(params);
+            },
+
+            changePerPage: function(newPerPage) {
+                if (this.state.isLoading) {
+                    console.log('Already loading, ignoring per page change');
+                    return;
+                }
+
+                const params = new URLSearchParams(window.location.search);
+                params.set('per_page', newPerPage);
+                params.set('page_number', '1'); // Reset to first page when changing per page
+                this.reloadTableContentWithParams(params);
+            },
+
+            jumpToPage: function() {
+                const pageInput = document.getElementById('pageJumpInput');
+                if (!pageInput) return;
+
+                const pageNumber = parseInt(pageInput.value);
+                if (isNaN(pageNumber)) {
+                    this.showToast('Please enter a valid page number', 'warning');
+                    return;
+                }
+
+                this.loadPage(pageNumber);
+            },
+
+            handlePageJump: function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    this.jumpToPage();
+                }
             },
 
             reloadTableContent: function() {
@@ -914,14 +1129,23 @@ include __DIR__ . '/../layouts/header.php';
             },
 
             reloadTableContentWithParams: function(params) {
+                if (this.state.isLoading) {
+                    console.log('Already loading, ignoring reload request');
+                    return;
+                }
+
                 const tableContainer = document.getElementById('tableContainer');
                 const totalActionsCount = document.getElementById('totalActionsCount');
                 const paginationContainer = document.getElementById('paginationContainer');
+                const paginationInfo = document.getElementById('paginationInfo');
+                const paginationSummary = document.getElementById('paginationSummary');
                 
                 if (!tableContainer) {
                     console.error('Table container not found');
                     return;
                 }
+
+                this.state.isLoading = true;
 
                 // Show loading state
                 tableContainer.classList.add('table-loading');
@@ -986,6 +1210,9 @@ include __DIR__ . '/../layouts/header.php';
                         // Hide pagination if not needed
                         paginationContainer.style.display = 'none';
                     }
+
+                    // Update pagination info
+                    this.updatePaginationInfo(params);
                     
                     // Update URL without page reload
                     const newUrl = `${window.location.pathname}?${params.toString()}`;
@@ -999,11 +1226,31 @@ include __DIR__ . '/../layouts/header.php';
                 })
                 .finally(() => {
                     // Remove loading state
+                    this.state.isLoading = false;
                     tableContainer.classList.remove('table-loading');
                     if (loadingOverlay && loadingOverlay.parentNode) {
                         loadingOverlay.parentNode.removeChild(loadingOverlay);
                     }
                 });
+            },
+
+            updatePaginationInfo: function(params) {
+                // This would typically be updated from server response
+                // For now, we'll estimate based on current params
+                const currentPage = parseInt(params.get('page_number') || '1');
+                const perPage = parseInt(params.get('per_page') || this.config.perPage);
+                
+                // Update page jump input max value
+                const pageJumpInput = document.getElementById('pageJumpInput');
+                if (pageJumpInput) {
+                    pageJumpInput.value = currentPage;
+                }
+
+                // Update per page selector
+                const perPageSelect = document.getElementById('perPageSelect');
+                if (perPageSelect) {
+                    perPageSelect.value = perPage;
+                }
             },
 
             // Delete functions
